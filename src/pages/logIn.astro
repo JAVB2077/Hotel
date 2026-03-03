@@ -1,0 +1,739 @@
+---
+// src/pages/logIn.astro
+---
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+
+<div class="ambient"></div>
+<div class="grid-lines"></div>
+
+<!-- Indicador de hora + toggle manual -->
+<div class="theme-bar" id="themeBar">
+  <div class="theme-time" id="themeTime"></div>
+  <button class="theme-toggle" id="themeToggle" title="Cambiar tema">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <span class="theme-label" id="themeLabel">Modo d&iacute;a</span>
+  </button>
+</div>
+
+<div class="page">
+
+  <!-- Panel Izquierdo -->
+  <div class="left-panel">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M8 10v4M12 10v4M16 10v4"/>
+        </svg>
+      </div>
+      <span class="brand-eyebrow">Sistema de Control</span>
+      <h1 class="brand-name">Grand<br/><em>&eacute;lite</em><br/>Hotels</h1>
+      <p class="brand-tagline">
+        Panel de administraci&oacute;n centralizado para la gesti&oacute;n integral de operaciones hoteleras.
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number">248</span>
+        <span class="stat-label">Habitaciones activas</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">94%</span>
+        <span class="stat-label">Ocupaci&oacute;n actual</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">18</span>
+        <span class="stat-label">Personal en turno</span>
+      </div>
+      <div class="stat-divider"></div>
+    </div>
+
+    <div class="left-footer">
+      <div class="status-dot"></div>
+      <span class="status-text">Todos los sistemas operativos</span>
+    </div>
+  </div>
+
+  <!-- Panel Derecho -->
+  <div class="right-panel">
+    <div class="login-container">
+
+      <div class="login-header">
+        <h2 class="login-title">Iniciar sesi&oacute;n</h2>
+        <p class="login-subtitle">Acceso restringido al personal autorizado</p>
+      </div>
+
+      <form class="form" id="loginForm" novalidate>
+
+        <div class="field">
+          <span class="field-label">Departamento</span>
+          <div class="role-selector">
+            <label class="role-option">
+              <input type="radio" name="role" value="admin" checked />
+              <span class="role-label">Admin</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="recepcion" />
+              <span class="role-label">Recepci&oacute;n</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="staff" />
+              <span class="role-label">Staff</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="username">Usuario</label>
+          <div class="field-input-wrap">
+            <input type="text" id="username" class="field-input"
+              placeholder="nombre.apellido" autocomplete="username" />
+            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+            <div class="field-line"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="password">Contrase&ntilde;a</label>
+          <div class="field-input-wrap">
+            <input type="password" id="password" class="field-input"
+              placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password" />
+            <svg class="field-icon" id="togglePwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <div class="field-line"></div>
+          </div>
+        </div>
+
+        <div class="error-msg" id="errorMsg">
+          Credenciales incorrectas. Verifica tu usuario y contrase&ntilde;a.
+        </div>
+
+        <div class="options-row">
+          <label class="remember-wrap">
+            <input type="checkbox" id="remember" style="display:none" />
+            <div class="remember-box" id="rememberBox">
+              <svg id="checkIcon" width="8" height="8" viewBox="0 0 8 8" fill="none"
+                stroke="var(--gold)" stroke-width="2" style="display:none">
+                <path d="M1 4l2 2 4-4"/>
+              </svg>
+            </div>
+            <span class="remember-text">Recordar sesi&oacute;n</span>
+          </label>
+          <a href="#" class="forgot-link">&#x00BF;Olvidaste tu acceso?</a>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span class="btn-text">Ingresar al sistema</span>
+          <div class="btn-loader">
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+          </div>
+        </button>
+
+      </form>
+
+      <p class="version">v2.4.1 &middot; Grand &eacute;lite Control Suite</p>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ══ TEMA NOCHE (defecto) ══ */
+  :root {
+    --gold:        #C9A96E;
+    --gold-light:  #E2C99A;
+    --gold-dim:    rgba(201,169,110,0.14);
+    --gold-btn-fg: #0A0A0B;
+
+    --bg:          #0A0A0B;
+    --bg-panel:    #0A0A0B;
+    --text:        #E8E4DC;
+    --text-muted:  #6B6860;
+    --text-dim:    #7f7f85;
+    --border:      rgba(201,169,110,0.12);
+    --border-h:    rgba(201,169,110,0.35);
+    --grid-line:   rgba(201,169,110,0.025);
+    --ambient-1:   rgba(201,169,110,0.06);
+    --ambient-2:   rgba(201,169,110,0.03);
+
+    --bar-bg:      rgba(10,10,11,0.92);
+    --bar-border:  rgba(201,169,110,0.10);
+    --bar-text:    #6B6860;
+  }
+
+  /* ══ TEMA DIA ══ */
+  :root.day {
+    --gold:        #A87A3A;
+    --gold-light:  #7A5520;
+    --gold-dim:    rgba(168,122,58,0.12);
+    --gold-btn-fg: #FFFFFF;
+
+    --bg:          #F5F1EA;
+    --bg-panel:    #EDE8DF;
+    --text:        #1A1714;
+    --text-muted:  #5A5248;
+    --text-dim:    #8A8278;
+    --border:      rgba(168,122,58,0.20);
+    --border-h:    rgba(168,122,58,0.50);
+    --grid-line:   rgba(168,122,58,0.06);
+    --ambient-1:   rgba(168,122,58,0.08);
+    --ambient-2:   rgba(168,122,58,0.04);
+
+    --bar-bg:      rgba(237,232,223,0.95);
+    --bar-border:  rgba(168,122,58,0.15);
+    --bar-text:    #8A8278;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    overflow: hidden;
+    transition: background .6s ease, color .6s ease;
+  }
+
+  /* Barra de tema */
+  .theme-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 24px;
+    background: var(--bar-bg);
+    border-bottom: 1px solid var(--bar-border);
+    backdrop-filter: blur(12px);
+    transition: background .6s, border-color .6s;
+  }
+  .theme-time {
+    font-size: 11px; font-weight: 300; letter-spacing: .18em;
+    color: var(--bar-text); font-variant-numeric: tabular-nums;
+  }
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--border);
+    padding: 6px 14px; cursor: pointer;
+    color: var(--text-muted); font-family: 'Jost', sans-serif;
+    font-size: 10px; font-weight: 400; letter-spacing: .2em;
+    text-transform: uppercase;
+    transition: all .3s;
+  }
+  .theme-toggle:hover {
+    border-color: var(--border-h); color: var(--gold);
+  }
+  .theme-toggle svg {
+    width: 13px; height: 13px; flex-shrink: 0;
+    transition: opacity .3s, transform .4s;
+  }
+  /* Mostrar solo el icono correcto */
+  :root .icon-sun   { opacity: 0; transform: rotate(90deg); }
+  :root .icon-moon  { opacity: 1; transform: rotate(0deg); }
+  :root.day .icon-sun  { opacity: 1; transform: rotate(0deg); }
+  :root.day .icon-moon { opacity: 0; transform: rotate(-90deg); }
+
+  .theme-label { transition: color .3s; }
+
+  /* Ambiente */
+  .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .ambient::before {
+    content: '';
+    position: absolute; top: -20%; right: -10%;
+    width: 55vw; height: 55vw;
+    background: radial-gradient(circle, var(--ambient-1) 0%, transparent 65%);
+    animation: breathe 8s ease-in-out infinite;
+    transition: background .6s;
+  }
+  .ambient::after {
+    content: '';
+    position: absolute; bottom: -15%; left: -10%;
+    width: 45vw; height: 45vw;
+    background: radial-gradient(circle, var(--ambient-2) 0%, transparent 65%);
+    animation: breathe 8s ease-in-out infinite reverse;
+    transition: background .6s;
+  }
+  @keyframes breathe {
+    0%,100% { opacity:.6; transform:scale(1); }
+    50%     { opacity:1;  transform:scale(1.08); }
+  }
+
+  .grid-lines {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transition: background-image .6s;
+  }
+
+  /* Layout */
+  .page {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1fr 1fr;
+    height: 100vh;
+    padding-top: 41px; /* altura barra */
+  }
+
+  /* Panel Izquierdo */
+  .left-panel {
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 56px 64px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-panel);
+    animation: fadeL 1s ease both;
+    transition: background .6s, border-color .6s;
+  }
+  @keyframes fadeL {
+    from { opacity:0; transform:translateX(-24px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+
+  .brand { display:flex; flex-direction:column; gap:8px; }
+  .brand-icon {
+    width:36px; height:36px; border:1px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:24px; position:relative;
+    transition: border-color .6s;
+  }
+  .brand-icon::before {
+    content:''; position:absolute; inset:4px;
+    border:1px solid rgba(201,169,110,.3);
+    transition: border-color .6s;
+  }
+  .brand-icon svg { width:16px; height:16px; color:var(--gold); transition:color .6s; }
+
+  .brand-eyebrow {
+    font-size:10px; font-weight:400; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--gold); opacity:.8;
+    transition:color .6s;
+  }
+  .brand-name {
+    font-family:'Cormorant Garamond', serif;
+    font-size:clamp(32px,3.5vw,52px); font-weight:300;
+    line-height:1.1; letter-spacing:.02em; color:var(--text);
+    transition:color .6s;
+  }
+  .brand-name em { font-style:italic; color:var(--gold-light); transition:color .6s; }
+  .brand-tagline {
+    margin-top:20px; font-size:12px; font-weight:300;
+    color:var(--text-muted); letter-spacing:.08em; line-height:1.7; max-width:280px;
+    transition:color .6s;
+  }
+
+  .stats { display:flex; flex-direction:column; gap:28px; }
+  .stat-divider { width:32px; height:1px; background:var(--border-h); transition:background .6s; }
+  .stat-item { display:flex; flex-direction:column; gap:4px; }
+  .stat-number {
+    font-family:'Cormorant Garamond', serif;
+    font-size:28px; font-weight:400; color:var(--gold-light); letter-spacing:.05em;
+    transition:color .6s;
+  }
+  .stat-label {
+    font-size:10px; font-weight:400; letter-spacing:.25em;
+    text-transform:uppercase; color:var(--text-dim); transition:color .6s;
+  }
+
+  .left-footer { display:flex; align-items:center; gap:16px; }
+  .status-dot {
+    width:6px; height:6px; border-radius:50%;
+    background:#4CAF82; box-shadow:0 0 8px rgba(76,175,130,.6);
+    animation:pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow:0 0 8px rgba(76,175,130,.6); }
+    50%     { box-shadow:0 0 16px rgba(76,175,130,.9); }
+  }
+  .status-text { font-size:11px; color:var(--text-muted); letter-spacing:.12em; transition:color .6s; }
+
+  /* Panel Derecho */
+  .right-panel {
+    display:flex; align-items:center; justify-content:center;
+    padding:56px 72px;
+    background:var(--bg);
+    animation:fadeR 1s ease .15s both;
+    transition:background .6s;
+  }
+  @keyframes fadeR {
+    from { opacity:0; transform:translateX(24px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+
+  .login-container { width:100%; max-width:380px; }
+  .login-header { margin-bottom:52px; }
+  .login-title {
+    font-family:'Cormorant Garamond', serif;
+    font-size:28px; font-weight:400; letter-spacing:.04em; color:var(--text); margin-bottom:8px;
+    transition:color .6s;
+  }
+  .login-subtitle { font-size:12px; font-weight:300; color:var(--text-muted); letter-spacing:.08em; transition:color .6s; }
+
+  .form { display:flex; flex-direction:column; gap:28px; }
+
+  .field { position:relative; display:flex; flex-direction:column; gap:10px; }
+  .field-label {
+    font-size:10px; font-weight:400; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--text-dim); transition:color .3s;
+  }
+  .field:focus-within .field-label { color:var(--gold); }
+
+  .field-input-wrap { position:relative; }
+  .field-input {
+    width:100%; background:transparent;
+    border:none; border-bottom:1px solid var(--border);
+    padding:12px 0; padding-right:36px;
+    font-family:'Jost', sans-serif; font-size:14px; font-weight:300;
+    color:var(--text); letter-spacing:.05em;
+    outline:none; caret-color:var(--gold);
+    transition:border-color .3s, color .6s;
+  }
+  .field-input::placeholder { color:var(--text-dim); font-weight:200; }
+  .field-input:focus { border-bottom-color:var(--gold); }
+
+  .field-line {
+    position:absolute; bottom:0; left:0;
+    width:0; height:1px; background:var(--gold);
+    transition:width .4s cubic-bezier(.4,0,.2,1), background .6s;
+  }
+  .field-input:focus ~ .field-line { width:100%; }
+
+  .field-icon {
+    position:absolute; right:0; top:50%; transform:translateY(-50%);
+    color:var(--text-dim); width:16px; height:16px;
+    transition:color .3s; cursor:pointer;
+  }
+  .field:focus-within .field-icon { color:var(--text-muted); }
+
+  .role-selector { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:4px; }
+  .role-option { position:relative; }
+  .role-option input { position:absolute; opacity:0; width:0; height:0; }
+  .role-label {
+    display:flex; align-items:center; justify-content:center;
+    padding:10px 8px; border:1px solid var(--border);
+    font-size:10px; font-weight:400; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--text-dim);
+    cursor:pointer; transition:all .25s; user-select:none;
+  }
+  .role-label:hover { border-color:var(--border-h); color:var(--text-muted); }
+  .role-option input:checked + .role-label {
+    border-color:var(--gold); color:var(--gold); background:var(--gold-dim);
+  }
+
+  .options-row { display:flex; align-items:center; justify-content:space-between; }
+  .remember-wrap { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+  .remember-box {
+    width:14px; height:14px; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    transition:all .25s; flex-shrink:0;
+  }
+  .remember-text { font-size:11px; font-weight:300; color:var(--text-muted); letter-spacing:.06em; transition:color .6s; }
+  .forgot-link {
+    font-size:11px; font-weight:300; color:var(--text-dim);
+    text-decoration:none; letter-spacing:.06em; transition:color .25s;
+  }
+  .forgot-link:hover { color:var(--gold); }
+
+  .btn-submit {
+    position:relative; width:100%; padding:16px;
+    background:transparent; border:1px solid var(--gold);
+    color:var(--gold); font-family:'Jost', sans-serif;
+    font-size:11px; font-weight:400; letter-spacing:.35em;
+    text-transform:uppercase; cursor:pointer;
+    overflow:hidden; transition:color .4s, border-color .6s; margin-top:8px;
+  }
+  .btn-submit::before {
+    content:''; position:absolute; inset:0;
+    background:var(--gold); transform:translateX(-100%);
+    transition:transform .4s cubic-bezier(.4,0,.2,1), background .6s; z-index:0;
+  }
+  .btn-submit:hover::before { transform:translateX(0); }
+  .btn-submit:hover { color:var(--gold-btn-fg); }
+
+  .btn-text { position:relative; z-index:1; }
+  .btn-submit.loading .btn-text { opacity:0; }
+  .btn-loader {
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    z-index:1; opacity:0; transition:opacity .2s;
+  }
+  .btn-submit.loading .btn-loader { opacity:1; }
+  .loader-dot {
+    width:4px; height:4px; border-radius:50%;
+    background:currentColor; animation:dotB .8s ease-in-out infinite;
+  }
+  .loader-dot:nth-child(2) { animation-delay:.15s; }
+  .loader-dot:nth-child(3) { animation-delay:.3s; }
+  @keyframes dotB {
+    0%,100% { transform:translateY(0); opacity:.4; }
+    50%     { transform:translateY(-5px); opacity:1; }
+  }
+
+  .error-msg {
+    background:rgba(220,80,80,.08); border:1px solid rgba(220,80,80,.25);
+    padding:12px 16px; font-size:11px; color:#DC5050;
+    letter-spacing:.06em; line-height:1.6; display:none;
+  }
+  .error-msg.show { display:block; animation:shake .4s ease; }
+  @keyframes shake {
+    0%,100% { transform:translateX(0); }
+    20%,60% { transform:translateX(-6px); }
+    40%,80% { transform:translateX(6px); }
+  }
+
+  .version {
+    margin-top:52px; text-align:center;
+    font-size:10px; font-weight:300; color:var(--text-dim); letter-spacing:.2em;
+    transition:color .6s;
+  }
+
+  /* ── Tablet landscape 1024px ── */
+  @media (max-width: 1024px) {
+    .left-panel { padding: 40px 40px; }
+    .brand-name { font-size: 36px; }
+    .right-panel { padding: 40px 48px; }
+    .theme-bar { padding: 8px 20px; }
+    .theme-time { font-size: 10px; }
+    .theme-toggle { padding: 6px 12px; font-size: 9px; }
+  }
+
+  /* ── Tablet portrait 768px ── */
+  @media (max-width: 768px) {
+    html, body { overflow: auto; }
+    .page { grid-template-columns:1fr; min-height:100vh; height:auto; }
+    .left-panel {
+      flex-direction:row; align-items:center; justify-content:space-between;
+      padding:20px 28px; border-right:none; border-bottom:1px solid var(--border);
+    }
+    .stats, .left-footer { display:none; }
+    .brand { flex-direction:row; align-items:center; gap:14px; }
+    .brand-icon { margin-bottom:0; width:30px; height:30px; }
+    .brand-tagline, .brand-eyebrow { display:none; }
+    .brand-name { font-size:20px; white-space:nowrap; }
+    .brand-name br { display:none; }
+    .right-panel { padding:44px 40px; min-height:calc(100vh - 122px); align-items:flex-start; justify-content:center; }
+    .login-container { max-width:440px; }
+    .login-header { margin-bottom:36px; }
+  }
+
+  /* ── Mobile 480px ── */
+  @media (max-width: 480px) {
+    .left-panel { padding:16px 20px; }
+    .brand-name { font-size:17px; }
+    .brand-icon { width:26px; height:26px; }
+    .right-panel { padding:32px 20px; align-items:stretch; }
+    .login-container { max-width:100%; }
+    .login-title { font-size:23px; }
+    .login-header { margin-bottom:28px; }
+    .form { gap:22px; }
+    .role-label { padding:10px 4px; font-size:9px; letter-spacing:.08em; }
+    .options-row { flex-direction:column; align-items:flex-start; gap:14px; }
+    .btn-submit { padding:17px; font-size:10px; }
+    .version { margin-top:32px; }
+    .theme-bar { padding:6px 16px; }
+    .theme-label { display:inline; font-size:9px; letter-spacing:.15em; }
+    .theme-toggle { padding:5px 10px; gap:6px; }
+    .theme-time { font-size:9px; letter-spacing:.12em; }
+  }
+
+  /* ── Mobile pequeño 360px ── */
+  @media (max-width: 360px) {
+    .right-panel { padding:24px 16px; }
+    .login-title { font-size:20px; }
+    .field-input { font-size:13px; }
+    .role-selector { gap:5px; }
+  }
+</style>
+
+<script>
+  // ── SISTEMA DE TEMAS DIA / NOCHE ──────────────────────────────────
+
+  const DAY_START  = 6;   // 6:00 AM
+  const DAY_END    = 18;  // 6:00 PM
+
+  const root        = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  const themeLabel  = document.getElementById('themeLabel');
+  const themeTime   = document.getElementById('themeTime');
+
+  let manualOverride = false;  // el usuario cambio el tema manualmente
+  let currentTheme   = 'night';
+
+  function getAutoTheme(): 'day' | 'night' {
+    const h = new Date().getHours();
+    return (h >= DAY_START && h < DAY_END) ? 'day' : 'night';
+  }
+
+  function applyTheme(theme: 'day' | 'night') {
+    currentTheme = theme;
+    if (theme === 'day') {
+      root.classList.add('day');
+      if (themeLabel) themeLabel.textContent = 'Modo noche';
+    } else {
+      root.classList.remove('day');
+      if (themeLabel) themeLabel.textContent = 'Modo dia';
+    }
+  }
+
+  function updateClock() {
+    const now  = new Date();
+    const h    = String(now.getHours()).padStart(2, '0');
+    const m    = String(now.getMinutes()).padStart(2, '0');
+    const s    = String(now.getSeconds()).padStart(2, '0');
+    const dia  = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'][now.getDay()];
+    const auto = getAutoTheme();
+
+    if (themeTime) {
+      themeTime.textContent = dia + '  ' + h + ':' + m + ':' + s + '  ·  ' + (auto === 'day' ? 'Horario diurno' : 'Horario nocturno');
+    }
+
+    // Si no hay override manual, seguir el horario automatico
+    if (!manualOverride && auto !== currentTheme) {
+      applyTheme(auto);
+    }
+  }
+
+  // Toggle manual
+  themeToggle?.addEventListener('click', () => {
+    manualOverride = true;
+    applyTheme(currentTheme === 'day' ? 'night' : 'day');
+
+    // Resetear override despues de 2 horas para volver al automatico
+    setTimeout(() => { manualOverride = false; }, 2 * 60 * 60 * 1000);
+  });
+
+  // Inicializar con el tema correcto segun la hora
+  applyTheme(getAutoTheme());
+  updateClock();
+  setInterval(updateClock, 1000);
+
+
+  // ── TOGGLE CONTRASENA ────────────────────────────────────────────
+
+  const togglePwd = document.getElementById('togglePwd');
+  const pwdInput  = document.getElementById('password');
+  let visible = false;
+
+  togglePwd?.addEventListener('click', () => {
+    visible = !visible;
+    if (pwdInput instanceof HTMLInputElement) pwdInput.type = visible ? 'text' : 'password';
+    if (togglePwd) {
+      togglePwd.innerHTML = visible
+        ? `<path d="M17.94 17.94A10 10 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
+        : `<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>`;
+    }
+  });
+
+  // ── CHECKBOX RECORDAR ────────────────────────────────────────────
+
+  const rememberBox = document.getElementById('rememberBox');
+  const remember    = document.getElementById('remember');
+  const checkIcon   = document.getElementById('checkIcon');
+
+  function syncRemember() {
+    if (!(remember instanceof HTMLInputElement)) return;
+    const checked = remember.checked;
+    if (checkIcon instanceof HTMLElement)
+      checkIcon.style.display = checked ? 'block' : 'none';
+    if (rememberBox instanceof HTMLElement) {
+      rememberBox.style.borderColor = checked ? 'var(--gold)' : 'var(--border)';
+      rememberBox.style.background  = checked ? 'var(--gold-dim)' : 'transparent';
+    }
+  }
+
+  rememberBox?.addEventListener('click', () => {
+    if (remember instanceof HTMLInputElement) {
+      remember.checked = !remember.checked;
+      syncRemember();
+    }
+  });
+
+  // Por si el usuario usa teclado u otro metodo
+  remember?.addEventListener('change', syncRemember);
+
+  // ── SUBMIT ───────────────────────────────────────────────────────
+
+  const form      = document.getElementById('loginForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const errorMsg  = document.getElementById('errorMsg');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg?.classList.remove('show');
+
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+    const user = usernameEl instanceof HTMLInputElement ? usernameEl.value.trim() : '';
+    const pass = passwordEl instanceof HTMLInputElement ? passwordEl.value : '';
+
+    if (!user || !pass) {
+      if (errorMsg) errorMsg.textContent = 'Por favor completa todos los campos.';
+      errorMsg?.classList.add('show');
+      return;
+    }
+
+    if (submitBtn instanceof HTMLButtonElement) {
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+    }
+
+    await new Promise(r => setTimeout(r, 1800));
+
+    // ── Aqui conectaras tu backend ──
+    // Credenciales de prueba: admin/admin (rol admin), recepcion/recepcion (rol recepcion), staff/staff (rol staff)
+    const credentials: Record<string, { pass: string; role: string }> = {
+      'admin':     { pass: 'admin',     role: 'admin' },
+      'recepcion': { pass: 'recepcion', role: 'recepcion' },
+      'staff':     { pass: 'staff',     role: 'staff' },
+    };
+
+    const cred = credentials[user];
+    const selectedRole = (document.querySelector('input[name="role"]:checked') as HTMLInputElement)?.value || '';
+
+    if (cred && cred.pass === pass && cred.role === selectedRole) {
+      // Guardar sesion en sessionStorage
+      sessionStorage.setItem('hotel_user', user);
+      sessionStorage.setItem('hotel_role', selectedRole);
+
+      if (submitBtn instanceof HTMLElement) {
+        submitBtn.style.background = 'var(--gold)';
+        submitBtn.style.color      = 'var(--gold-btn-fg)';
+        submitBtn.classList.remove('loading');
+        const btnText = submitBtn.querySelector('.btn-text');
+        if (btnText instanceof HTMLElement) {
+          btnText.style.opacity = '1';
+          btnText.textContent   = 'Acceso concedido ✓';
+        }
+      }
+
+      // Redirigir segun el rol — rutas por subcarpeta de rol
+      setTimeout(() => {
+        if (selectedRole === 'admin')     window.location.href = '/admin/dashboard';
+        if (selectedRole === 'recepcion') window.location.href = '/recepcion/dashboard';
+        if (selectedRole === 'staff')     window.location.href = '/staff/dashboard';
+      }, 800);
+
+    } else {
+      if (submitBtn instanceof HTMLButtonElement) {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+      }
+      errorMsg?.classList.add('show');
+    }
+  });
+</script>

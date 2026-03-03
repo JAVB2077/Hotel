@@ -1,0 +1,868 @@
+---
+// src/pages/dashboard.astro
+// Solo accesible para admin - la verificacion real se hara con el backend
+---
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+
+<!-- Proteccion de ruta (frontend) -->
+<script is:inline>
+  const role = sessionStorage.getItem('hotel_role');
+  const user = sessionStorage.getItem('hotel_user');
+  if (!user || role !== 'admin') {
+    window.location.replace('/logIn');
+  }
+</script>
+
+<div class="shell" id="shell">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M8 10v4M12 10v4M16 10v4"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <span class="brand-name">Grand <em>&eacute;lite</em></span>
+        <span class="brand-role">Administrador</span>
+      </div>
+      <button class="sidebar-close" id="sidebarClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-section="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span>Resumen</span>
+      </button>
+      <button class="nav-item" data-section="finanzas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+        </svg>
+        <span>Finanzas</span>
+      </button>
+      <button class="nav-item" data-section="habitaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Habitaciones</span>
+      </button>
+      <button class="nav-item" data-section="reservaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Reservaciones</span>
+      </button>
+      <button class="nav-item" data-section="huespedes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>Hu&eacute;spedes</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info">
+          <span class="user-name" id="sidebarUser">Admin</span>
+          <span class="user-dept">Administraci&oacute;n</span>
+        </div>
+      </div>
+      <button class="btn-logout" id="btnLogout" title="Cerrar sesi&oacute;n">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="topbar-title">
+          <span class="section-label" id="sectionLabel">Resumen General</span>
+          <span class="topbar-date" id="topbarDate"></span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="theme-toggle-top" id="themeToggleTop" title="Cambiar tema">
+          <svg class="t-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="t-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </div>
+        <div class="topbar-clock" id="topbarClock"></div>
+        <div class="notif-dot"></div>
+      </div>
+    </header>
+
+    <!-- ── SECCIÓN: RESUMEN ── -->
+    <section class="section active" id="sec-overview">
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--i:0">
+          <div class="kpi-top">
+            <span class="kpi-label">Ingresos del mes</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+          <span class="kpi-value">$284,500</span>
+          <div class="kpi-trend up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            +12.4% vs mes anterior
+          </div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:78%"></div></div>
+        </div>
+
+        <div class="kpi-card" style="--i:1">
+          <div class="kpi-top">
+            <span class="kpi-label">Ocupaci&oacute;n actual</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <span class="kpi-value">94<small>%</small></span>
+          <div class="kpi-trend up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            +6% esta semana
+          </div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:94%"></div></div>
+        </div>
+
+        <div class="kpi-card" style="--i:2">
+          <div class="kpi-top">
+            <span class="kpi-label">Reservaciones hoy</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <span class="kpi-value">23</span>
+          <div class="kpi-trend up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            8 check-in pendientes
+          </div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:60%"></div></div>
+        </div>
+
+        <div class="kpi-card" style="--i:3">
+          <div class="kpi-top">
+            <span class="kpi-label">Gastos operativos</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            </svg>
+          </div>
+          <span class="kpi-value">$67,200</span>
+          <div class="kpi-trend down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            -3.1% vs mes anterior
+          </div>
+          <div class="kpi-bar"><div class="kpi-fill accent2" style="width:35%"></div></div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-row">
+
+        <!-- Ingresos mensuales -->
+        <div class="chart-card wide" style="--i:4">
+          <div class="chart-header">
+            <span class="chart-title">Ingresos mensuales</span>
+            <span class="chart-sub">Últimos 7 meses · MXN</span>
+          </div>
+          <div class="bar-chart" id="barChart"></div>
+          <div class="bar-labels" id="barLabels"></div>
+        </div>
+
+        <!-- Distribución de ingresos -->
+        <div class="chart-card" style="--i:5">
+          <div class="chart-header">
+            <span class="chart-title">Distribuci&oacute;n</span>
+            <span class="chart-sub">Por categoría</span>
+          </div>
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 120 120" id="donutChart"></svg>
+            <div class="donut-center">
+              <span class="donut-pct">78%</span>
+              <span class="donut-lbl">Hospedaje</span>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+
+      </div>
+
+      <!-- Bottom row -->
+      <div class="bottom-row">
+
+        <!-- Estado habitaciones -->
+        <div class="chart-card" style="--i:6">
+          <div class="chart-header">
+            <span class="chart-title">Estado de habitaciones</span>
+            <span class="chart-sub">248 habitaciones totales</span>
+          </div>
+          <div class="rooms-grid" id="roomsGrid"></div>
+          <div class="rooms-legend">
+            <span class="rl-item"><span class="rl-dot occupied"></span>Ocupada</span>
+            <span class="rl-item"><span class="rl-dot free"></span>Libre</span>
+            <span class="rl-item"><span class="rl-dot maintenance"></span>Mantenimiento</span>
+            <span class="rl-item"><span class="rl-dot reserved"></span>Reservada</span>
+          </div>
+        </div>
+
+        <!-- Actividad reciente -->
+        <div class="chart-card wide" style="--i:7">
+          <div class="chart-header">
+            <span class="chart-title">Actividad reciente</span>
+            <span class="chart-sub">Últimas transacciones</span>
+          </div>
+          <div class="activity-list" id="activityList"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN: FINANZAS ── -->
+    <section class="section" id="sec-finanzas">
+      <div class="section-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+        </svg>
+        <h3>M&oacute;dulo de Finanzas</h3>
+        <p>Balance general, cuentas por cobrar, reportes fiscales y proyecciones.</p>
+        <span class="coming-soon">Pr&oacute;ximamente</span>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN: HABITACIONES ── -->
+    <section class="section" id="sec-habitaciones">
+      <div class="section-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        </svg>
+        <h3>Gesti&oacute;n de Habitaciones</h3>
+        <p>Control de disponibilidad, mantenimiento, tarifas y categorías.</p>
+        <span class="coming-soon">Pr&oacute;ximamente</span>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN: RESERVACIONES ── -->
+    <section class="section" id="sec-reservaciones">
+      <div class="section-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+        </svg>
+        <h3>Reservaciones</h3>
+        <p>Check-in, check-out, calendario de ocupaci&oacute;n y gesti&oacute;n de grupos.</p>
+        <span class="coming-soon">Pr&oacute;ximamente</span>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN: HUÉSPEDES ── -->
+    <section class="section" id="sec-huespedes">
+      <div class="section-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        <h3>Hu&eacute;spedes</h3>
+        <p>Perfiles, historial de estancias, preferencias y programa de fidelidad.</p>
+        <span class="coming-soon">Pr&oacute;ximamente</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Overlay sidebar mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  /* ══ TEMAS ══ */
+  :root {
+    --gold:       #C9A96E;
+    --gold-light: #E2C99A;
+    --gold-dim:   rgba(201,169,110,0.12);
+    --gold-fg:    #0A0A0B;
+    --green:      #4CAF82;
+    --red:        #E05555;
+
+    --bg:         #0A0A0B;
+    --bg2:        #111113;
+    --bg3:        #18181C;
+    --bg4:        #1E1E24;
+    --text:       #9c978d;
+    --text-m:     #8A8680;
+    --text-d:     #9f9fa7;
+    --border:     rgba(201,169,110,0.10);
+    --border-h:   rgba(201,169,110,0.28);
+    --sidebar-w:  240px;
+  }
+  :root.day {
+    --gold:       #A87A3A;
+    --gold-light: #7A5520;
+    --gold-dim:   rgba(206, 142, 53, 0.1);
+    --gold-fg:    #fff;
+    --bg:         #F4F0E8;
+    --bg2:        #EDE8DE;
+    --bg3:        #E5DFD3;
+    --bg4:        #DDD7C9;
+    --text:       #1A1714;
+    --text-m:     #1b1916;
+    --text-d:     #5a3d20;
+    --border:     rgba(168,122,58,0.14);
+    --border-h:   rgba(168,122,58,0.35);
+  }
+
+  html, body { height:100%; background:var(--bg); color:var(--text);
+    font-family:'Jost', sans-serif; font-weight:300; overflow:hidden;
+    transition:background .5s, color .5s; }
+
+  /* ══ SHELL ══ */
+  .shell { display:flex; height:100vh; overflow:hidden; }
+
+  /* ══ SIDEBAR ══ */
+  .sidebar {
+    width:var(--sidebar-w); flex-shrink:0;
+    background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    transition:background .5s, border-color .5s, transform .35s cubic-bezier(.4,0,.2,1);
+    z-index:200;
+  }
+  .sidebar-top {
+    display:flex; align-items:center; gap:12px;
+    padding:20px 20px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .brand-mark {
+    width:32px; height:32px; flex-shrink:0;
+    border:1px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .brand-mark svg { width:14px; height:14px; color:var(--gold); }
+  .brand-info { flex:1; min-width:0; }
+  .brand-name {
+    display:block; font-family:'Cormorant Garamond', serif;
+    font-size:14px; font-weight:400; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .brand-name em { font-style:italic; color:var(--gold-light); }
+  .brand-role { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--text-d); }
+  .sidebar-close {
+    display:none; background:transparent; border:none;
+    color:var(--text-m); cursor:pointer; padding:4px;
+  }
+  .sidebar-close svg { width:16px; height:16px; }
+
+  /* Nav */
+  .nav { flex:1; padding:16px 12px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+  .nav-item {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; background:transparent;
+    border:1px solid transparent; border-radius:0;
+    color:var(--text-m); font-family:'Jost', sans-serif;
+    font-size:11px; font-weight:400; letter-spacing:.12em;
+    text-transform:uppercase; cursor:pointer;
+    transition:all .22s; text-align:left;
+  }
+  .nav-item svg { width:15px; height:15px; flex-shrink:0; }
+  .nav-item:hover { color:var(--text); border-color:var(--border); background:var(--bg3); }
+  .nav-item.active {
+    color:var(--gold); border-color:var(--gold-dim);
+    background:var(--gold-dim);
+  }
+  .nav-item.active svg { color:var(--gold); }
+
+  /* Sidebar footer */
+  .sidebar-footer {
+    padding:14px 16px; border-top:1px solid var(--border);
+    display:flex; align-items:center; gap:10px;
+  }
+  .user-chip { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+  .user-avatar {
+    width:28px; height:28px; flex-shrink:0;
+    background:var(--gold-dim); border:1px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:500; color:var(--gold);
+    letter-spacing:.05em;
+  }
+  .user-info { min-width:0; }
+  .user-name { display:block; font-size:11px; font-weight:400; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-dept { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--text-d); }
+  .btn-logout {
+    background:transparent; border:1px solid var(--border);
+    padding:7px; cursor:pointer; color:var(--text-m);
+    transition:all .25s; flex-shrink:0;
+  }
+  .btn-logout svg { width:14px; height:14px; display:block; }
+  .btn-logout:hover { border-color:var(--red); color:var(--red); }
+
+  /* ══ MAIN ══ */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+  /* Topbar */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; height:56px; flex-shrink:0;
+    background:var(--bg2); border-bottom:1px solid var(--border);
+    transition:background .5s, border-color .5s;
+  }
+  .topbar-left { display:flex; align-items:center; gap:16px; }
+  .menu-btn {
+    display:none; background:transparent; border:none;
+    color:var(--text-m); cursor:pointer; padding:4px;
+  }
+  .menu-btn svg { width:18px; height:18px; }
+  .section-label { font-family:'Cormorant Garamond', serif; font-size:18px; font-weight:400; color:var(--text); }
+  .topbar-date { font-size:10px; letter-spacing:.18em; color:var(--text-d); margin-left:4px; }
+
+  .topbar-right { display:flex; align-items:center; gap:16px; }
+  .theme-toggle-top {
+    display:flex; align-items:center; gap:0;
+    cursor:pointer; padding:6px; border:1px solid var(--border);
+    transition:border-color .25s;
+  }
+  .theme-toggle-top:hover { border-color:var(--border-h); }
+  .theme-toggle-top svg { width:14px; height:14px; color:var(--text-m); transition:opacity .3s, transform .4s; }
+  :root .t-sun   { opacity:0; transform:rotate(90deg); position:absolute; }
+  :root .t-moon  { opacity:1; }
+  :root.day .t-sun  { opacity:1; transform:rotate(0deg); position:relative; }
+  :root.day .t-moon { opacity:0; transform:rotate(-90deg); position:absolute; }
+  .topbar-clock { font-size:11px; letter-spacing:.14em; color:var(--text-m); font-variant-numeric:tabular-nums; }
+  .notif-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px rgba(201,169,110,.5); }
+
+  /* ══ SECTIONS ══ */
+  .section { display:none; flex:1; overflow-y:auto; padding:24px; gap:20px; flex-direction:column; }
+  .section.active { display:flex; }
+
+  /* KPI Grid */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .kpi-card {
+    background:var(--bg3); border:1px solid var(--border);
+    padding:20px; display:flex; flex-direction:column; gap:8px;
+    animation:cardIn .5s ease calc(var(--i)*0.07s) both;
+    transition:background .5s, border-color .5s;
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .kpi-top { display:flex; align-items:center; justify-content:space-between; }
+  .kpi-top svg { width:16px; height:16px; color:var(--gold); opacity:.7; }
+  .kpi-label { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--text-d); }
+  .kpi-value {
+    font-family:'Cormorant Garamond', serif;
+    font-size:32px; font-weight:400; color:var(--text); line-height:1;
+  }
+  .kpi-value small { font-size:18px; color:var(--text-m); }
+  .kpi-trend { display:flex; align-items:center; gap:4px; font-size:10px; letter-spacing:.06em; }
+  .kpi-trend svg { width:12px; height:12px; }
+  .kpi-trend.up { color:var(--green); }
+  .kpi-trend.down { color:var(--red); }
+  .kpi-bar { height:2px; background:var(--bg4); margin-top:4px; }
+  .kpi-fill { height:100%; background:var(--gold); transition:width 1s cubic-bezier(.4,0,.2,1); }
+  .kpi-fill.accent2 { background:var(--red); }
+
+  /* Charts row */
+  .charts-row { display:grid; grid-template-columns:1fr 340px; gap:16px; }
+  .chart-card {
+    background:var(--bg3); border:1px solid var(--border); padding:20px;
+    animation:cardIn .5s ease calc(var(--i)*0.07s) both;
+    transition:background .5s, border-color .5s;
+  }
+  .chart-card.wide { }
+  .chart-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:20px; }
+  .chart-title { font-family:'Cormorant Garamond', serif; font-size:16px; font-weight:400; color:var(--text); }
+  .chart-sub { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--text-d); }
+
+  /* Bar chart */
+  .bar-chart {
+    display:flex; align-items:flex-end; gap:8px; height:120px;
+  }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+  .bar-fill {
+    width:100%; background:var(--gold); opacity:.8;
+    transition:height .8s cubic-bezier(.4,0,.2,1);
+    position:relative; cursor:pointer;
+  }
+  .bar-fill:hover { opacity:1; }
+  .bar-fill::after {
+    content:attr(data-val); position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    font-size:9px; color:var(--text-m); white-space:nowrap; padding-bottom:3px;
+    opacity:0; transition:opacity .2s;
+  }
+  .bar-fill:hover::after { opacity:1; }
+  .bar-labels { display:flex; gap:8px; margin-top:8px; }
+  .bar-lbl { flex:1; text-align:center; font-size:9px; letter-spacing:.12em; color:var(--text-d); text-transform:uppercase; }
+
+  /* Donut */
+  .donut-wrap { position:relative; width:120px; height:120px; margin:0 auto 16px; }
+  .donut { width:120px; height:120px; }
+  .donut-center {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .donut-pct { font-family:'Cormorant Garamond', serif; font-size:22px; font-weight:400; color:var(--text); }
+  .donut-lbl { font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-d); }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; }
+  .legend-dot { width:8px; height:8px; flex-shrink:0; }
+  .legend-label { font-size:10px; color:var(--text-m); flex:1; }
+  .legend-pct { font-size:10px; color:var(--text); font-weight:400; }
+
+  /* Bottom row */
+  .bottom-row { display:grid; grid-template-columns:320px 1fr; gap:16px; }
+
+  /* Rooms grid */
+  .rooms-grid {
+    display:grid; grid-template-columns:repeat(20,1fr); gap:2px;
+    margin-bottom:12px;
+  }
+  .room-dot { aspect-ratio:1; border-radius:1px; cursor:pointer; transition:transform .15s; }
+  .room-dot:hover { transform:scale(1.4); }
+  .room-dot.occupied { background:var(--gold); }
+  .room-dot.free { background:var(--green); opacity:.7; }
+  .room-dot.maintenance { background:var(--red); opacity:.8; }
+  .room-dot.reserved { background:#6B8CFF; opacity:.8; }
+  .rooms-legend { display:flex; flex-wrap:wrap; gap:10px 16px; }
+  .rl-item { display:flex; align-items:center; gap:5px; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-d); }
+  .rl-dot { width:7px; height:7px; border-radius:1px; }
+  .rl-dot.occupied { background:var(--gold); }
+  .rl-dot.free { background:var(--green); }
+  .rl-dot.maintenance { background:var(--red); }
+  .rl-dot.reserved { background:#6B8CFF; }
+
+  /* Activity list */
+  .activity-list { display:flex; flex-direction:column; }
+  .act-item {
+    display:grid; grid-template-columns:20px 1fr auto auto;
+    align-items:center; gap:10px; padding:8px 0;
+    border-bottom:1px solid var(--border);
+    transition: background .15s;
+  }
+  .act-item:last-child { border-bottom:none; }
+  .act-item:hover { background: var(--bg4); margin:0 -8px; padding:8px 8px; }
+
+  /* Icono: solo punto de color, sin caja */
+  .act-icon {
+    width:6px; height:6px; border-radius:50%;
+    flex-shrink:0; margin-top:1px;
+  }
+  .act-icon.ci  { background:var(--gold); box-shadow:0 0 5px rgba(201,169,110,.4); }
+  .act-icon.co  { background:#6B8CFF;     box-shadow:0 0 5px rgba(107,140,255,.4); }
+  .act-icon.pay { background:var(--green); box-shadow:0 0 5px rgba(76,175,130,.4); }
+  .act-icon.mnt { background:var(--red);   box-shadow:0 0 5px rgba(224,85,85,.4); }
+
+  .act-desc { font-size:11px; font-weight:400; color:var(--text); line-height:1.2; }
+  .act-desc small { display:block; font-size:9px; font-weight:300; color:var(--text-d); letter-spacing:.08em; margin-top:1px; }
+  .act-amount { font-family:'Cormorant Garamond', serif; font-size:13px; font-weight:400; text-align:right; }
+  .act-amount.pos { color:var(--green); }
+  .act-amount.neg { color:var(--red); }
+  .act-time { font-size:9px; letter-spacing:.08em; color:var(--text-d); white-space:nowrap; text-align:right; }
+
+  /* Placeholder sections */
+  .section-placeholder {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
+    color:var(--text-d);
+  }
+  .section-placeholder svg { width:48px; height:48px; color:var(--border-h); }
+  .section-placeholder h3 { font-family:'Cormorant Garamond', serif; font-size:24px; font-weight:400; color:var(--text-m); }
+  .section-placeholder p { font-size:12px; color:var(--text-d); letter-spacing:.06em; text-align:center; max-width:300px; line-height:1.7; }
+  .coming-soon {
+    font-size:9px; letter-spacing:.3em; text-transform:uppercase;
+    border:1px solid var(--border); padding:6px 16px; color:var(--gold); margin-top:8px;
+  }
+
+  /* Overlay */
+  .sidebar-overlay {
+    display:none; position:fixed; inset:0; z-index:150;
+    background:rgba(0,0,0,.6); backdrop-filter:blur(2px);
+  }
+
+  /* ══ RESPONSIVE ══ */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns:repeat(2,1fr); }
+    .charts-row { grid-template-columns:1fr; }
+    .bottom-row { grid-template-columns:1fr; }
+  }
+
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 260px; }
+    .sidebar {
+      position:fixed; top:0; left:0; bottom:0;
+      transform:translateX(-100%);
+    }
+    .sidebar.open { transform:translateX(0); }
+    .sidebar-close { display:flex !important; }
+    .sidebar-overlay.open { display:block; }
+    .menu-btn { display:flex !important; }
+    .topbar { padding:0 16px; }
+    .section { padding:16px; }
+    .kpi-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+    .kpi-value { font-size:26px; }
+    .topbar-clock { display:none; }
+  }
+
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+    .kpi-card { padding:14px; }
+    .kpi-value { font-size:22px; }
+    .section { padding:12px; gap:12px; }
+    .chart-card { padding:14px; }
+    .bar-chart { height:90px; }
+    .topbar-date { display:none; }
+    .section-label { font-size:15px; }
+  }
+
+  @media (max-width: 360px) {
+    .kpi-grid { grid-template-columns:1fr; }
+    .rooms-grid { grid-template-columns:repeat(15,1fr); }
+  }
+</style>
+
+<script>
+  // ── PROTECCION + DATOS DE SESION ────────────────────────────────
+  const storedUser = sessionStorage.getItem('hotel_user') || 'Admin';
+  const userAvatarEl = document.getElementById('userAvatar');
+  const sidebarUserEl = document.getElementById('sidebarUser');
+  if (userAvatarEl) userAvatarEl.textContent = storedUser.charAt(0).toUpperCase();
+  if (sidebarUserEl) sidebarUserEl.textContent = storedUser;
+
+  // ── TEMA DIA/NOCHE ───────────────────────────────────────────────
+  const root = document.documentElement;
+  const DAY_START = 6, DAY_END = 18;
+  let manualOverride = false;
+  let currentTheme = 'night';
+
+  function getAutoTheme() {
+    const h = new Date().getHours();
+    return (h >= DAY_START && h < DAY_END) ? 'day' : 'night';
+  }
+  function applyTheme(theme: string) {
+    currentTheme = theme;
+    theme === 'day' ? root.classList.add('day') : root.classList.remove('day');
+  }
+
+  document.getElementById('themeToggleTop')?.addEventListener('click', () => {
+    manualOverride = true;
+    applyTheme(currentTheme === 'day' ? 'night' : 'day');
+    setTimeout(() => { manualOverride = false; }, 2 * 60 * 60 * 1000);
+  });
+
+  applyTheme(getAutoTheme());
+
+  // Reloj
+  const clockEl = document.getElementById('topbarClock');
+  const dateEl  = document.getElementById('topbarDate');
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    if (clockEl) clockEl.textContent = h + ':' + m + ':' + s;
+    const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    if (dateEl) dateEl.textContent = dias[now.getDay()] + ' ' + now.getDate() + ' ' + meses[now.getMonth()];
+    if (!manualOverride && getAutoTheme() !== currentTheme) applyTheme(getAutoTheme());
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ── SIDEBAR NAVIGATION ──────────────────────────────────────────
+  const navItems = document.querySelectorAll('.nav-item');
+  const sections = document.querySelectorAll('.section');
+  const sectionLabel = document.getElementById('sectionLabel');
+  const labels: Record<string, string> = {
+    overview: 'Resumen General', finanzas: 'Finanzas',
+    habitaciones: 'Habitaciones', reservaciones: 'Reservaciones', huespedes: 'Huéspedes'
+  };
+
+  navItems.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sec = btn.getAttribute('data-section') || 'overview';
+      navItems.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sections.forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('sec-' + sec);
+      if (target) target.classList.add('active');
+      if (sectionLabel) sectionLabel.textContent = labels[sec] || sec;
+      // cerrar sidebar en mobile
+      if (window.innerWidth < 768) closeSidebar();
+    });
+  });
+
+  // ── SIDEBAR MOBILE ──────────────────────────────────────────────
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const menuBtn = document.getElementById('menuBtn');
+  const closeBtn = document.getElementById('sidebarClose');
+
+  function openSidebar() {
+    sidebar?.classList.add('open');
+    overlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar?.classList.remove('open');
+    overlay?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  menuBtn?.addEventListener('click', openSidebar);
+  closeBtn?.addEventListener('click', closeSidebar);
+  overlay?.addEventListener('click', closeSidebar);
+
+  // ── LOGOUT ──────────────────────────────────────────────────────
+  document.getElementById('btnLogout')?.addEventListener('click', () => {
+    sessionStorage.removeItem('hotel_user');
+    sessionStorage.removeItem('hotel_role');
+    window.location.replace('/logIn');
+  });
+
+  // ── GRÁFICA DE BARRAS ───────────────────────────────────────────
+  const barData = [
+    { mes:'Sep', val:210000 }, { mes:'Oct', val:195000 },
+    { mes:'Nov', val:230000 }, { mes:'Dic', val:310000 },
+    { mes:'Ene', val:265000 }, { mes:'Feb', val:248000 },
+    { mes:'Mar', val:284500 },
+  ];
+  const maxVal = Math.max(...barData.map(d => d.val));
+  const barChart = document.getElementById('barChart');
+  const barLabels = document.getElementById('barLabels');
+  if (barChart && barLabels) {
+    barData.forEach(d => {
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.height = '0';
+      fill.setAttribute('data-val', '$' + (d.val/1000).toFixed(0) + 'k');
+      col.appendChild(fill);
+      barChart.appendChild(col);
+      setTimeout(() => { fill.style.height = (d.val / maxVal * 100) + '%'; }, 100);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'bar-lbl';
+      lbl.textContent = d.mes;
+      barLabels.appendChild(lbl);
+    });
+  }
+
+  // ── DONUT CHART ─────────────────────────────────────────────────
+  const donutData = [
+    { label:'Hospedaje', pct:78, color:'#C9A96E' },
+    { label:'Restaurante', pct:12, color:'#4CAF82' },
+    { label:'Spa & Eventos', pct:6, color:'#6B8CFF' },
+    { label:'Otros', pct:4, color:'#E05555' },
+  ];
+  const donutSvg = document.getElementById('donutChart');
+  const legend   = document.getElementById('donutLegend');
+  if (donutSvg) {
+    const r = 45, cx = 60, cy = 60, stroke = 14;
+    const circ = 2 * Math.PI * r;
+    let offset = 0;
+    donutData.forEach(d => {
+      const dash = (d.pct / 100) * circ;
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('cx', String(cx));
+      circle.setAttribute('cy', String(cy));
+      circle.setAttribute('r', String(r));
+      circle.setAttribute('fill','none');
+      circle.setAttribute('stroke', d.color);
+      circle.setAttribute('stroke-width', String(stroke));
+      circle.setAttribute('stroke-dasharray', dash + ' ' + (circ - dash));
+      circle.setAttribute('stroke-dashoffset', String(-(offset / 100) * circ + circ/4));
+      circle.style.transition = 'stroke-dasharray .8s ease';
+      donutSvg.appendChild(circle);
+      offset += d.pct;
+    });
+  }
+  if (legend) {
+    donutData.forEach(d => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `<div class="legend-dot" style="background:${d.color}"></div><span class="legend-label">${d.label}</span><span class="legend-pct">${d.pct}%</span>`;
+      legend.appendChild(item);
+    });
+  }
+
+  // ── GRID HABITACIONES ───────────────────────────────────────────
+  const roomsGrid = document.getElementById('roomsGrid');
+  if (roomsGrid) {
+    const statuses = ['occupied','free','maintenance','reserved'];
+    const weights  = [0.94, 0.03, 0.02, 0.01]; // probabilidades
+    for (let i = 0; i < 248; i++) {
+      const r = Math.random();
+      let status = 'occupied';
+      if (r > 0.94 + 0.03 + 0.02) status = 'reserved';
+      else if (r > 0.94 + 0.03) status = 'maintenance';
+      else if (r > 0.94) status = 'free';
+      const dot = document.createElement('div');
+      dot.className = 'room-dot ' + status;
+      dot.title = 'Hab. ' + (i + 101);
+      roomsGrid.appendChild(dot);
+    }
+  }
+
+  // ── ACTIVIDAD RECIENTE ──────────────────────────────────────────
+  const activities = [
+    { icon:'check-in', desc:'Check-in · Juan Pérez', sub:'Hab. 312 · Suite Deluxe', amount:'+$3,200', pos:true, time:'Hace 8 min' },
+    { icon:'pay',      desc:'Pago restaurante',      sub:'Consumo mesa 7',          amount:'+$890',   pos:true, time:'Hace 22 min' },
+    { icon:'checkout', desc:'Check-out · María R.',  sub:'Hab. 204 · Estándar',     amount:'+$6,400', pos:true, time:'Hace 1 h' },
+    { icon:'maint',    desc:'Mantenimiento',          sub:'Hab. 118 · Plomería',     amount:'-$450',   pos:false,time:'Hace 2 h' },
+    { icon:'pay',      desc:'Pago spa',               sub:'Servicio masaje · 2 pax', amount:'+$1,600', pos:true, time:'Hace 3 h' },
+    { icon:'check-in', desc:'Check-in · Carlos M.',  sub:'Hab. 501 · Junior Suite', amount:'+$4,800', pos:true, time:'Hace 4 h' },
+  ];
+  const iconPaths: Record<string,string> = {
+    'check-in': '<path d="M16 17l5-5-5-5M21 12H9"/><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>',
+    'checkout': '<path d="M9 17l-5-5 5-5M3 12h12"/><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>',
+    'pay':      '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+    'maint':    '<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',
+  };
+  const actList = document.getElementById('activityList');
+  if (actList) {
+    activities.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'act-item';
+      const dotClass = { 'check-in':'ci', 'checkout':'co', 'pay':'pay', 'maint':'mnt' };
+      item.innerHTML = `
+        <div class="act-icon ${dotClass[a.icon] || 'pay'}"></div>
+        <div class="act-desc">${a.desc}<small>${a.sub}</small></div>
+        <span class="act-amount ${a.pos?'pos':'neg'}">${a.amount}</span>
+        <span class="act-time">${a.time}</span>
+      `;
+      actList.appendChild(item);
+    });
+  }
+</script>
