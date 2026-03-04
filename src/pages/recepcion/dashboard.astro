@@ -1,6 +1,16 @@
 ---
 // src/pages/recepcion/dashboard.astro
 ---
+<!--
+  Archivo: src/pages/recepcion/dashboard.astro
+  Propósito: Dashboard para el personal de Recepción. Contiene:
+    - Comprobación de sesión (redirige a login si no está autenticado)
+    - Sidebar con navegación (mapa, check-ins, incidencias, housekeeping)
+    - Secciones principales: mapa de pisos, check-in/out, incidencias, housekeeping
+    - Modales y utilidades JS para interacción (abrir/cerrar modales, cambiar estados)
+    - Generación de datos de ejemplo (habitaciones, incidencias, check-ins, cola de housekeeping)
+  Nota: los comentarios en este archivo explican qué hace cada bloque principal.
+-->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
@@ -493,6 +503,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',
 
 <script>
 // ── SESIÓN ──────────────────────────────────────────────────────
+/*
+  Gestión de sesión (cliente):
+  - Lee `hotel_user` y `hotel_role` desde sessionStorage.
+  - Si no hay usuario o el rol no es "admin" ni "recepcion", redirige a /logIn.
+  - Actualiza el avatar y el nombre en la barra lateral con la inicial y nombre almacenados.
+  (Esto es una comprobación muy simple del cliente; la seguridad real debe verificarse en el backend.)
+*/
 const storedUser = sessionStorage.getItem('hotel_user') || 'Recepción';
 const avatarEl = document.getElementById('userAvatar');
 const sidebarUserEl = document.getElementById('sidebarUser');
@@ -500,6 +517,13 @@ if (avatarEl) avatarEl.textContent = storedUser.charAt(0).toUpperCase();
 if (sidebarUserEl) sidebarUserEl.textContent = storedUser;
 
 // ── TEMA ────────────────────────────────────────────────────────
+/*
+  Tema (day/night):
+  - `getAutoTheme()` elige 'day' o 'night' según la hora local.
+  - `applyTheme()` aplica la clase CSS `day` al elemento root para cambiar variables CSS.
+  - Existe un override manual cuando el usuario pulsa el toggle (se vuelve a auto aplicar después de 2 horas).
+  - El tick del reloj también revalida el tema automáticamente.
+*/
 const root = document.documentElement;
 let manualOverride = false, currentTheme = 'night';
 function getAutoTheme(){ const h=new Date().getHours(); return(h>=6&&h<18)?'day':'night'; }
@@ -519,6 +543,13 @@ function tick(){
 tick(); setInterval(tick,1000);
 
 // ── NAVEGACIÓN ──────────────────────────────────────────────────
+/*
+  Navegación y sidebar:
+  - `navItems` escucha clicks y activa la sección correspondiente (.section.active).
+  - Actualiza `sectionLabel` con el nombre legible de la sección.
+  - `openSidebar()` / `closeSidebar()` controlan la visibilidad en pantallas pequeñas.
+  - El botón de logout limpia sessionStorage y redirige al login.
+*/
 const navItems=document.querySelectorAll('.nav-item'),sections=document.querySelectorAll('.section');
 const sectionLabel=document.getElementById('sectionLabel');
 const secLabels: Record<string,string>={mapa:'Mapa de pisos',checkins:'Check-in / Check-out',incidencias:'Incidencias',housekeeping:'Housekeeping'};
@@ -540,6 +571,12 @@ overlay?.addEventListener('click',closeSidebar);
 document.getElementById('btnLogout')?.addEventListener('click',()=>{sessionStorage.removeItem('hotel_user');sessionStorage.removeItem('hotel_role');window.location.replace('/logIn');});
 
 // ── MODAL ───────────────────────────────────────────────────────
+/*
+  Modal genérico:
+  - `openModal(title,badge,badgeClass,body,footer)` rellena el contenido y muestra el backdrop.
+  - `closeModal()` oculta el modal.
+  - Se usan `modalTitle`, `modalBadge`, `modalBody`, `modalFooter` para insertar HTML dinámico.
+*/
 const backdrop=document.getElementById('modalBackdrop');
 function openModal(title: string, badge: string, badgeClass: string, body: string, footer: string){
   const mt=document.getElementById('modalTitle'),mb=document.getElementById('modalBadge'),mbd=document.getElementById('modalBody'),mf=document.getElementById('modalFooter');
@@ -554,6 +591,14 @@ document.getElementById('modalClose')?.addEventListener('click',closeModal);
 backdrop?.addEventListener('click',(e)=>{ if(e.target===backdrop) closeModal(); });
 
 // ── DATOS ───────────────────────────────────────────────────────
+/*
+  Datos y tipos locales (simulación de backend):
+  - Definimos tipos TypeScript para habitaciones (`Room`) y estados (`RoomStatus`).
+  - `tipoMap` y `guestNames` son referencias para rellenar datos de ejemplo.
+  - `rng(seed)` proporciona un RNG determinista simple para generar estado reproducible.
+  - Se generan ~248 habitaciones distribuidas por piso con un pool de estados (`statusPool`).
+  - `statusLabels` y `statusBadgeClass` mapean estados a etiquetas legibles y clases CSS.
+*/
 type RoomStatus = 'ocupada'|'libre-limpia'|'libre-sucia'|'reservada'|'checkout'|'mantenimiento'|'bloqueada';
 interface Room { num: number; tipo: string; piso: number; status: RoomStatus; guest?: string; checkIn?: string; checkOut?: string; nights?: number; notas?: string; hasIncidence?: boolean; }
 
@@ -604,6 +649,16 @@ function updateTopbarKpis(){
 }
 
 // ── MAPA DE PISOS ───────────────────────────────────────────────
+/*
+  Mapa de pisos / representación de habitaciones:
+  - `buildFloorTabs()` crea pestañas de pisos (Todos, P1..P7) y escucha clicks para filtrar.
+  - `buildFloorMap(floor, searchQ)` filtra `rooms` por piso y por texto de búsqueda,
+    luego monta DOM (secciones por piso o un solo piso) con tarjetas de habitación.
+  - `makeRoomCard(r)` crea la tarjeta HTML para una habitación y adjunta el evento click
+    que abre el modal con `openRoomModal(r)`.
+  - `openRoomModal(r)` muestra información detallada de la habitación y un select para cambiar estado.
+  - `saveRoomStatus(num)` (expuesto en `window`) guarda el nuevo estado, cierra modal y refresca vista y KPIs.
+*/
 const floorTabs=document.getElementById('floorTabs'), floorContainer=document.getElementById('floorContainer');
 let currentFloor=0; // 0 = todos
 
@@ -710,6 +765,15 @@ document.getElementById('roomSearch')?.addEventListener('input',(e)=>{
 });
 
 // ── CHECK-IN / OUT ───────────────────────────────────────────────
+/*
+  Check-in / Check-out:
+  - `ciData` simula las entradas pendientes, en casa y salidas (checkout).
+  - `renderCILists()` divide los datos por estado y renderiza tarjetas con acciones.
+  - Acciones expuestas en `window`: `verCI(id)`, `doCheckin(id)`, `doCheckout(id)`, `ampliarCI(id)`.
+    * `doCheckin` marca la reserva como 'en-casa', actualiza la habitación a 'ocupada' y actualiza vistas.
+    * `doCheckout` marca salida, pone la habitación como 'libre-sucia', añade item a la cola de housekeeping y actualiza vistas.
+  - `verCI` abre un modal con los detalles del registro.
+*/
 interface CIEntry { id:number; nombre:string; hab:number; tipo:string; entrada:string; salida:string; noches:number; pax:number; notas:string; estado:'pendiente'|'en-casa'|'checkout'; }
 const ciData: CIEntry[] = [
   {id:1,nombre:'Alejandro Torres',hab:205,tipo:'Jr. Suite',entrada:'05 Mar',salida:'09 Mar',noches:4,pax:2,notas:'Solicita cuna extra',estado:'pendiente'},
@@ -767,6 +831,15 @@ renderCILists();
 };
 
 // ── INCIDENCIAS ──────────────────────────────────────────────────
+/*
+  Incidencias (reports):
+  - `Incidencia` es la interfaz que describe cada reporte (tipo, descripción, tiempo, estado).
+  - `incidencias` es la lista simulada con algunos ejemplos.
+  - `renderIncidencias(filter)` filtra y muestra tarjetas de incidencia en la cuadrícula.
+  - `openIncModal(inc)` abre un modal con los detalles y botones para marcar como resuelta/reabrir.
+  - `saveNewInc()` crea una nueva incidencia a partir del formulario del modal.
+  - `resolveInc(id)` alterna el estado entre 'activa' y 'resuelta' y actualiza la UI y KPIs.
+*/
 interface Incidencia { id:number; hab:number; tipo:'urgente'|'solicitud'|'limpieza'|'tecnico'|'resuelta'; desc:string; tiempo:string; estado:'activa'|'resuelta'; }
 let incidencias: Incidencia[] = [
   {id:1,hab:312,tipo:'urgente',desc:'Fuga de agua en el baño, el huésped reporta agua en el piso.',tiempo:'Hace 10 min',estado:'activa'},
@@ -826,6 +899,14 @@ document.getElementById('btnNuevaInc')?.addEventListener('click',()=>{
 };
 
 // ── HOUSEKEEPING ─────────────────────────────────────────────────
+/*
+  Housekeeping (cola de limpieza):
+  - `HKItem` describe elementos en la cola o completados.
+  - `hkQueue` es la cola pendiente; `hkDoneItems` son las tareas completadas.
+  - `renderHK()` actualiza el resumen, la cola y la lista de completadas en el DOM.
+  - `assignHK(hab)` asigna una tarea de la cola (la mueve a `hkDoneItems`), marca la habitación como limpia
+    y actualiza las vistas y KPIs.
+*/
 interface HKItem { hab:number; tipo:string; prioridad:'alta'|'media'|'baja'; tiempo:string; asignada:boolean; }
 let hkQueue: HKItem[] = [
   {hab:204,tipo:'Limpieza post check-out',prioridad:'alta',tiempo:'08:30',asignada:false},
