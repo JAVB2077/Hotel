@@ -1,0 +1,890 @@
+---
+// src/pages/staff/dashboard.astro
+---
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+
+<script is:inline>
+  const _r = sessionStorage.getItem('hotel_role');
+  const _u = sessionStorage.getItem('hotel_user');
+  if (!_u || (_r !== 'admin' && _r !== 'staff')) window.location.replace('/logIn');
+</script>
+
+<div class="shell" id="shell">
+
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" id="menuBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="brand-lockup">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M8 10v4M12 10v4M16 10v4"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">Grand <em>Élite</em></div>
+          <div class="brand-sub">Staff Operations</div>
+        </div>
+      </div>
+    </div>
+    <nav class="topnav" id="topnav">
+      <button class="tnav-item active" data-section="tareas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Mis tareas
+        <span class="tnav-badge" id="navBadgeTareas">0</span>
+      </button>
+      <button class="tnav-item" data-section="solicitudes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        Solicitudes
+        <span class="tnav-badge urgent" id="navBadgeSol">0</span>
+      </button>
+      <button class="tnav-item" data-section="inventario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Inventario
+      </button>
+      <button class="tnav-item" data-section="registro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Registro turno
+      </button>
+    </nav>
+    <div class="topbar-right">
+      <div class="jornada-chip" id="jornadaChip">
+        <span class="jornada-dot" id="jornadaDot"></span>
+        <span id="jornadaLabel">—</span>
+      </div>
+      <div class="theme-toggle" id="themeToggle">
+        <svg class="t-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="t-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </div>
+      <div class="clock-block">
+        <div class="clock-time" id="clockTime">00:00</div>
+        <div class="clock-date" id="clockDate"></div>
+      </div>
+      <div class="user-pill" id="userPill">
+        <div class="user-av" id="userAv">S</div>
+        <span class="user-nm" id="userName">Staff</span>
+        <button class="logout-btn" id="logoutBtn" title="Salir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ MAIN ══ -->
+  <main class="main">
+
+    <!-- PANEL LATERAL FIJO -->
+    <aside class="side-panel">
+      <!-- Progreso del turno -->
+      <div class="sp-card sp-progress">
+        <div class="sp-label">Progreso del turno</div>
+        <div class="sp-progress-ring">
+          <svg viewBox="0 0 80 80" class="ring-svg">
+            <circle class="ring-bg" cx="40" cy="40" r="34"/>
+            <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34"/>
+          </svg>
+          <div class="ring-center">
+            <span class="ring-pct" id="ringPct">0%</span>
+            <span class="ring-sub">completo</span>
+          </div>
+        </div>
+        <div class="sp-progress-stats">
+          <div class="sp-stat"><span class="sp-stat-val" id="spDone">0</span><span class="sp-stat-lbl">Hechas</span></div>
+          <div class="sp-stat-div"></div>
+          <div class="sp-stat"><span class="sp-stat-val" id="spPend">0</span><span class="sp-stat-lbl">Pendientes</span></div>
+          <div class="sp-stat-div"></div>
+          <div class="sp-stat"><span class="sp-stat-val urgent-val" id="spUrgent">0</span><span class="sp-stat-lbl">Urgentes</span></div>
+        </div>
+      </div>
+
+      <!-- Área asignada -->
+      <div class="sp-card sp-area">
+        <div class="sp-label">Área asignada</div>
+        <div class="area-chips" id="areaChips"></div>
+      </div>
+
+      <!-- Turno actual -->
+      <div class="sp-card sp-turno">
+        <div class="sp-label">Turno activo</div>
+        <div class="turno-info" id="turnoInfo"></div>
+      </div>
+
+      <!-- Compañeros activos -->
+      <div class="sp-card sp-crew">
+        <div class="sp-label">Equipo en turno</div>
+        <div class="crew-list" id="crewList"></div>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="content">
+
+      <!-- ══ TAREAS ══ -->
+      <section class="section active" id="sec-tareas">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Mis tareas</h2>
+            <p class="section-desc" id="taskDesc">Turno de hoy</p>
+          </div>
+          <div class="section-actions">
+            <div class="pill-filters" id="taskFilters">
+              <button class="pill active" data-tf="todas">Todas</button>
+              <button class="pill" data-tf="urgente">Urgente</button>
+              <button class="pill" data-tf="limpieza">Limpieza</button>
+              <button class="pill" data-tf="servicio">Servicio</button>
+              <button class="pill" data-tf="mantenimiento">Mant.</button>
+              <button class="pill" data-tf="completada">✓ Hechas</button>
+            </div>
+            <button class="btn-new" id="btnNewTask">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva
+            </button>
+          </div>
+        </div>
+        <div class="tareas-grid" id="tareasGrid"></div>
+      </section>
+
+      <!-- ══ SOLICITUDES ══ -->
+      <section class="section" id="sec-solicitudes">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Solicitudes de huéspedes</h2>
+            <p class="section-desc">Solicitudes activas · Ordenadas por prioridad</p>
+          </div>
+          <div class="pill-filters">
+            <button class="pill active" data-sf="todas">Todas</button>
+            <button class="pill" data-sf="urgente">Urgente</button>
+            <button class="pill" data-sf="normal">Normal</button>
+            <button class="pill" data-sf="atendida">Atendidas</button>
+          </div>
+        </div>
+        <div class="sol-list" id="solList"></div>
+      </section>
+
+      <!-- ══ INVENTARIO ══ -->
+      <section class="section" id="sec-inventario">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Inventario de turno</h2>
+            <p class="section-desc">Control de suministros · Piso asignado</p>
+          </div>
+          <button class="btn-new" id="btnReporte">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Reporte
+          </button>
+        </div>
+        <div class="inv-grid" id="invGrid"></div>
+      </section>
+
+      <!-- ══ REGISTRO DE TURNO ══ -->
+      <section class="section" id="sec-registro">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Registro del turno</h2>
+            <p class="section-desc">Bitácora de actividades · Hoy</p>
+          </div>
+          <button class="btn-new" id="btnAddLog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar nota
+          </button>
+        </div>
+        <div class="registro-layout">
+          <div class="bitacora" id="bitacora"></div>
+          <div class="reg-side">
+            <div class="reg-resumen" id="regResumen"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- DRAWER MOBILE -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-title">Menú</span>
+    <button class="drawer-close" id="drawerClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <nav class="drawer-nav" id="drawerNav"></nav>
+</div>
+
+<!-- MODAL -->
+<div class="modal-back" id="modalBack">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-head">
+      <span class="modal-ttl" id="modalTtl">—</span>
+      <button class="modal-x" id="modalX">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-bd" id="modalBd"></div>
+    <div class="modal-ft" id="modalFt"></div>
+  </div>
+</div>
+
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --gold:#C9A96E;--gold-l:#E2C99A;--gold-dim:rgba(201,169,110,.12);--gold-fg:#0A0A0B;
+  --green:#4CAF82;--green-dim:rgba(76,175,130,.12);
+  --red:#E05555;--red-dim:rgba(224,85,85,.12);
+  --blue:#6B8CFF;--blue-dim:rgba(107,140,255,.12);
+  --amber:#F0A500;--amber-dim:rgba(240,165,0,.12);
+  --teal:#3EC9C9;
+  --bg:#08080A;--bg2:#0F0F12;--bg3:#161619;--bg4:#1C1C21;--bg5:#232328;
+  --text:#EAE6DE;--text-m:#7A7670;--text-d:#3E3E46;
+  --border:rgba(201,169,110,.08);--border-m:rgba(201,169,110,.16);--border-h:rgba(201,169,110,.28);
+  --topbar-h:56px;
+  --panel-w:230px;
+  --radius:0px;
+}
+:root.day{
+  --gold:#A07030;--gold-l:#7A5520;--gold-dim:rgba(160,112,48,.10);--gold-fg:#fff;
+  --bg:#F0EBE0;--bg2:#E8E2D5;--bg3:#DFD9CA;--bg4:#D6CFBE;--bg5:#CCC4B0;
+  --text:#18160F;--text-m:#5E5A52;--text-d:#A09880;
+  --border:rgba(160,112,48,.12);--border-m:rgba(160,112,48,.22);--border-h:rgba(160,112,48,.38);
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',sans-serif;font-weight:300;overflow:hidden;transition:background .4s,color .4s}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:0;z-index:300;
+  transition:background .4s,border-color .4s;
+}
+.topbar-left{display:flex;align-items:center;gap:14px;padding:0 20px;border-right:1px solid var(--border);height:100%}
+.menu-btn{display:none;background:transparent;border:none;color:var(--text-m);cursor:pointer;padding:4px}
+.menu-btn svg{width:17px;height:17px}
+.brand-lockup{display:flex;align-items:center;gap:10px}
+.brand-mark{width:28px;height:28px;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-mark svg{width:12px;height:12px;color:var(--gold)}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:400;color:var(--text);line-height:1.1}
+.brand-name em{font-style:italic;color:var(--gold-l)}
+.brand-sub{font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:var(--text-d)}
+.topnav{display:flex;align-items:stretch;height:100%;flex:1;padding:0 4px;gap:0}
+.tnav-item{display:flex;align-items:center;gap:7px;padding:0 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-m);font-family:'Jost',sans-serif;font-size:10px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:all .22s;white-space:nowrap;position:relative}
+.tnav-item svg{width:13px;height:13px;flex-shrink:0}
+.tnav-item:hover{color:var(--text);border-bottom-color:var(--border-m)}
+.tnav-item.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tnav-badge{background:var(--red);color:#fff;font-size:8px;font-weight:600;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;margin-left:2px}
+.tnav-badge.urgent{background:var(--red);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,85,85,.4)}50%{box-shadow:0 0 0 4px rgba(224,85,85,0)}}
+.tnav-badge:empty{display:none}
+.topbar-right{display:flex;align-items:center;gap:10px;padding:0 16px;margin-left:auto;border-left:1px solid var(--border);height:100%}
+.jornada-chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-m)}
+.jornada-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(76,175,130,.5)}
+.theme-toggle{display:flex;align-items:center;cursor:pointer;padding:5px;border:1px solid var(--border);transition:border-color .25s}
+.theme-toggle:hover{border-color:var(--border-h)}
+.theme-toggle svg{width:13px;height:13px;color:var(--text-m);transition:opacity .3s,transform .4s}
+:root .t-sun{opacity:0;transform:rotate(90deg);position:absolute}:root .t-moon{opacity:1}
+:root.day .t-sun{opacity:1;transform:rotate(0deg);position:relative}:root.day .t-moon{opacity:0;transform:rotate(-90deg);position:absolute}
+.clock-block{text-align:right}
+.clock-time{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.clock-date{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-d);margin-top:1px}
+.user-pill{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 10px;border:1px solid var(--border)}
+.user-av{width:24px;height:24px;background:var(--gold-dim);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--gold);flex-shrink:0}
+.user-nm{font-size:10px;color:var(--text-m);letter-spacing:.06em}
+.logout-btn{background:transparent;border:none;color:var(--text-d);cursor:pointer;padding:4px;transition:color .2s;display:flex;align-items:center}
+.logout-btn svg{width:13px;height:13px}
+.logout-btn:hover{color:var(--red)}
+
+/* ══ SHELL ══ */
+.shell{padding-top:var(--topbar-h);height:100vh;display:flex;overflow:hidden}
+.main{flex:1;display:flex;overflow:hidden}
+
+/* ══ SIDE PANEL ══ */
+.side-panel{width:var(--panel-w);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:12px;transition:background .4s,border-color .4s}
+.sp-card{background:var(--bg3);border:1px solid var(--border);padding:14px;transition:background .4s,border-color .4s}
+.sp-label{font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:var(--text-d);margin-bottom:10px}
+
+/* Progress ring */
+.sp-progress-ring{position:relative;width:80px;height:80px;margin:0 auto 12px}
+.ring-svg{width:80px;height:80px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--bg4);stroke-width:6}
+.ring-fill{fill:none;stroke:var(--gold);stroke-width:6;stroke-linecap:square;stroke-dasharray:213.6;stroke-dashoffset:213.6;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-pct{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text);line-height:1}
+.ring-sub{font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-d)}
+.sp-progress-stats{display:flex;align-items:center;justify-content:center;gap:0}
+.sp-stat{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.sp-stat-val{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--text);line-height:1}
+.sp-stat-val.urgent-val{color:var(--red)}
+.sp-stat-lbl{font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-d)}
+.sp-stat-div{width:1px;height:28px;background:var(--border)}
+
+/* Area chips */
+.area-chips{display:flex;flex-wrap:wrap;gap:5px}
+.area-chip{background:var(--gold-dim);border:1px solid rgba(201,169,110,.2);color:var(--gold);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px}
+
+/* Turno info */
+.turno-info{display:flex;flex-direction:column;gap:6px}
+.turno-row{display:flex;align-items:center;justify-content:space-between;font-size:10px}
+.turno-key{color:var(--text-d);letter-spacing:.1em}
+.turno-val{color:var(--text);font-weight:400}
+.turno-progress{height:2px;background:var(--bg4);margin-top:6px}
+.turno-progress-fill{height:100%;background:var(--gold);transition:width 1s ease}
+
+/* Crew */
+.crew-list{display:flex;flex-direction:column;gap:6px}
+.crew-item{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-m)}
+.crew-av{width:22px;height:22px;background:var(--bg4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;color:var(--text-d);flex-shrink:0}
+.crew-nm{flex:1;font-size:10px;color:var(--text-m)}
+.crew-status{width:6px;height:6px;border-radius:50%}
+.crew-status.active{background:var(--green);box-shadow:0 0 5px rgba(76,175,130,.4)}
+.crew-status.break{background:var(--amber)}
+.crew-status.off{background:var(--text-d)}
+
+/* ══ CONTENT ══ */
+.content{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:0}
+.section{display:none;flex-direction:column;gap:20px}
+.section.active{display:flex;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section head */
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--text);line-height:1.1;letter-spacing:.02em}
+.section-desc{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-d);margin-top:4px}
+.section-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Pills */
+.pill-filters{display:flex;gap:3px;flex-wrap:wrap}
+.pill{background:transparent;border:1px solid var(--border);padding:5px 12px;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-d);cursor:pointer;transition:all .2s}
+.pill:hover{border-color:var(--border-m);color:var(--text-m)}
+.pill.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+
+/* New btn */
+.btn-new{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--gold);color:var(--gold);padding:6px 14px;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.btn-new::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-100%);transition:transform .3s;z-index:0}
+.btn-new:hover::before{transform:translateX(0)}
+.btn-new:hover{color:var(--gold-fg)}
+.btn-new svg{width:13px;height:13px;position:relative;z-index:1}
+.btn-new span,.btn-new{position:relative;z-index:1}
+
+/* ══ TAREAS GRID ══ */
+.tareas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.tarea-card{background:var(--bg3);border:1px solid var(--border);padding:0;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;animation:slideIn .4s ease both}
+@keyframes slideIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.tarea-card:hover{border-color:var(--border-h);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.tarea-card.completada{opacity:.45}
+.tarea-card.completada .tc-title{text-decoration:line-through}
+/* Barra lateral de color */
+.tarea-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;transition:width .25s}
+.tarea-card:hover::before{width:4px}
+.tarea-card.urgente::before{background:var(--red)}
+.tarea-card.limpieza::before{background:var(--green)}
+.tarea-card.servicio::before{background:var(--gold)}
+.tarea-card.mantenimiento::before{background:var(--blue)}
+.tarea-card.completada::before{background:var(--text-d)}
+
+.tc-body{padding:14px 14px 10px 18px}
+.tc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.tc-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.tc-tipo{font-size:8px;letter-spacing:.2em;text-transform:uppercase;padding:2px 6px;border:1px solid;font-weight:400}
+.tc-tipo.urgente{color:var(--red);border-color:rgba(224,85,85,.3)}
+.tc-tipo.limpieza{color:var(--green);border-color:rgba(76,175,130,.3)}
+.tc-tipo.servicio{color:var(--gold);border-color:rgba(201,169,110,.3)}
+.tc-tipo.mantenimiento{color:var(--blue);border-color:rgba(107,140,255,.3)}
+.tc-tipo.completada{color:var(--text-d);border-color:var(--border)}
+.tc-prio{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-d)}
+.tc-hab{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--text);line-height:1}
+.tc-title{font-size:12px;font-weight:400;color:var(--text);margin-bottom:5px;line-height:1.4}
+.tc-desc{font-size:10px;color:var(--text-m);line-height:1.5;margin-bottom:10px}
+.tc-foot{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 10px 18px;border-top:1px solid var(--border)}
+.tc-time{font-size:9px;color:var(--text-d);letter-spacing:.06em}
+.tc-check{background:transparent;border:1px solid var(--border);padding:4px 10px;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-d);cursor:pointer;transition:all .2s;font-family:'Jost',sans-serif}
+.tc-check:hover{border-color:var(--green);color:var(--green)}
+.tc-check.done{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+
+/* ══ SOLICITUDES ══ */
+.sol-list{display:flex;flex-direction:column;gap:8px}
+.sol-card{display:grid;grid-template-columns:4px 1fr auto;gap:0;background:var(--bg3);border:1px solid var(--border);overflow:hidden;transition:all .22s;animation:slideIn .35s ease both;cursor:pointer}
+.sol-card:hover{border-color:var(--border-h)}
+.sol-accent{transition:background .3s}
+.sol-accent.urgente{background:var(--red)}
+.sol-accent.normal{background:var(--gold)}
+.sol-accent.atendida{background:var(--text-d)}
+.sol-body{padding:14px 16px;display:flex;flex-direction:column;gap:5px}
+.sol-top{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.sol-hab{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--text);line-height:1}
+.sol-guest{font-size:10px;color:var(--text-m)}
+.sol-msg{font-size:12px;color:var(--text);line-height:1.5;font-weight:300}
+.sol-meta{display:flex;align-items:center;gap:12px;margin-top:4px}
+.sol-tag{font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:2px 7px;border:1px solid}
+.sol-tag.urgente{color:var(--red);border-color:rgba(224,85,85,.3)}
+.sol-tag.normal{color:var(--gold);border-color:rgba(201,169,110,.3)}
+.sol-tag.atendida{color:var(--text-d);border-color:var(--border)}
+.sol-time{font-size:9px;color:var(--text-d);letter-spacing:.06em}
+.sol-actions{display:flex;flex-direction:column;justify-content:center;padding:0 14px;gap:6px;border-left:1px solid var(--border)}
+.sol-btn{background:transparent;border:1px solid var(--border);padding:5px 10px;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-d);cursor:pointer;transition:all .2s;font-family:'Jost',sans-serif;white-space:nowrap}
+.sol-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sol-btn.atend{border-color:var(--green);color:var(--green)}
+.sol-btn.atend:hover{background:var(--green-dim)}
+
+/* ══ INVENTARIO ══ */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.inv-card{background:var(--bg3);border:1px solid var(--border);padding:16px;animation:slideIn .4s ease both;transition:all .2s}
+.inv-card:hover{border-color:var(--border-m)}
+.inv-icon{width:32px;height:32px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.inv-icon svg{width:15px;height:15px;color:var(--gold)}
+.inv-name{font-size:11px;font-weight:400;color:var(--text);margin-bottom:4px}
+.inv-cat{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-d);margin-bottom:10px}
+.inv-bar-bg{height:3px;background:var(--bg4);margin-bottom:6px}
+.inv-bar-fill{height:100%;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.inv-bar-fill.ok{background:var(--green)}
+.inv-bar-fill.mid{background:var(--amber)}
+.inv-bar-fill.low{background:var(--red)}
+.inv-bottom{display:flex;justify-content:space-between;align-items:baseline}
+.inv-qty{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--text);line-height:1}
+.inv-max{font-size:9px;color:var(--text-d);margin-left:2px}
+.inv-status{font-size:8px;letter-spacing:.15em;text-transform:uppercase}
+.inv-status.ok{color:var(--green)}.inv-status.mid{color:var(--amber)}.inv-status.low{color:var(--red)}
+.inv-actions{display:flex;gap:4px;margin-top:10px}
+.inv-btn{flex:1;background:transparent;border:1px solid var(--border);padding:4px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-d);cursor:pointer;transition:all .2s;font-family:'Jost',sans-serif}
+.inv-btn:hover{border-color:var(--gold);color:var(--gold)}
+.inv-btn.req:hover{border-color:var(--amber);color:var(--amber)}
+
+/* ══ REGISTRO ══ */
+.registro-layout{display:grid;grid-template-columns:1fr 280px;gap:16px}
+.bitacora{display:flex;flex-direction:column;gap:0;position:relative}
+.bitacora::before{content:'';position:absolute;left:15px;top:0;bottom:0;width:1px;background:var(--border)}
+.bita-entry{display:grid;grid-template-columns:32px 1fr;gap:12px;padding:0 0 16px;animation:slideIn .4s ease both}
+.bita-dot-wrap{display:flex;flex-direction:column;align-items:center;gap:0;z-index:1}
+.bita-dot{width:12px;height:12px;border:2px solid;background:var(--bg);flex-shrink:0;margin-top:4px}
+.bita-dot.limpieza{border-color:var(--green)}
+.bita-dot.servicio{border-color:var(--gold)}
+.bita-dot.mantenimiento{border-color:var(--blue)}
+.bita-dot.solicitud{border-color:var(--amber)}
+.bita-dot.nota{border-color:var(--text-d)}
+.bita-dot.completada{background:var(--green);border-color:var(--green)}
+.bita-content{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;transition:border-color .2s}
+.bita-content:hover{border-color:var(--border-m)}
+.bita-time{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-d);margin-bottom:4px}
+.bita-title{font-size:12px;font-weight:400;color:var(--text);margin-bottom:3px}
+.bita-desc{font-size:10px;color:var(--text-m);line-height:1.5}
+.bita-tag{display:inline-block;margin-top:6px;font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:1px 6px;border:1px solid}
+.bita-tag.limpieza{color:var(--green);border-color:rgba(76,175,130,.3)}
+.bita-tag.servicio{color:var(--gold);border-color:rgba(201,169,110,.3)}
+.bita-tag.mantenimiento{color:var(--blue);border-color:rgba(107,140,255,.3)}
+.bita-tag.solicitud{color:var(--amber);border-color:rgba(240,165,0,.3)}
+.bita-tag.nota{color:var(--text-d);border-color:var(--border)}
+.bita-tag.completada{color:var(--green);border-color:rgba(76,175,130,.3)}
+
+.reg-side{display:flex;flex-direction:column;gap:10px}
+.reg-resumen{background:var(--bg3);border:1px solid var(--border);padding:16px}
+.rr-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:var(--text);margin-bottom:14px}
+.rr-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px}
+.rr-item:last-child{border-bottom:none}
+.rr-lbl{color:var(--text-m);font-size:10px}
+.rr-val{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--text)}
+
+/* ══ MODAL ══ */
+.modal-back{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+.modal-back.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--border-m);width:100%;max-width:480px;animation:fadeUp .3s ease}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.modal-ttl{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--text)}
+.modal-x{background:transparent;border:none;color:var(--text-m);cursor:pointer;padding:4px}
+.modal-x svg{width:15px;height:15px}
+.modal-bd{padding:20px;font-size:12px;color:var(--text-m);line-height:1.7;max-height:55vh;overflow-y:auto}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-m);padding:7px 14px;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .25s}
+.btn-ghost:hover{border-color:var(--border-h);color:var(--text)}
+.mf-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:7px 14px;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.mf-btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-100%);transition:transform .3s}
+.mf-btn:hover::before{transform:translateX(0)}
+.mf-btn:hover{color:var(--gold-fg)}
+.mf-btn span{position:relative;z-index:1}
+.form-grid{display:flex;flex-direction:column;gap:14px}
+.form-field{display:flex;flex-direction:column;gap:6px}
+.form-field label{font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-d)}
+.form-field input,.form-field select,.form-field textarea{background:transparent;border:none;border-bottom:1px solid var(--border);padding:7px 0;font-family:'Jost',sans-serif;font-size:11px;color:var(--text);outline:none;caret-color:var(--gold);transition:border-color .25s;width:100%;resize:none}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-bottom-color:var(--gold)}
+.form-field input::placeholder,.form-field textarea::placeholder{color:var(--text-d);font-size:10px}
+.form-field select{appearance:none;cursor:pointer;background:transparent}
+.detail-g{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-bottom:12px}
+.dg-item{display:flex;flex-direction:column;gap:3px}
+.dg-lbl{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-d)}
+.dg-val{font-size:12px;color:var(--text)}
+
+/* DRAWER */
+.drawer-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.7);backdrop-filter:blur(3px)}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:var(--bg2);border-right:1px solid var(--border);z-index:450;transform:translateX(-100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px;border-bottom:1px solid var(--border)}
+.drawer-title{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--text)}
+.drawer-close{background:transparent;border:none;color:var(--text-m);cursor:pointer;padding:4px}
+.drawer-close svg{width:15px;height:15px}
+.drawer-nav{flex:1;padding:12px;display:flex;flex-direction:column;gap:4px}
+.drawer-nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:1px solid transparent;color:var(--text-m);font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:left}
+.drawer-nav-item svg{width:14px;height:14px}
+.drawer-nav-item:hover{color:var(--text);border-color:var(--border);background:var(--bg3)}
+.drawer-nav-item.active{color:var(--gold);border-color:var(--gold-dim);background:var(--gold-dim)}
+
+/* RESPONSIVE */
+@media(max-width:1280px){.registro-layout{grid-template-columns:1fr}}
+@media(max-width:1100px){.side-panel{display:none}}
+@media(max-width:900px){.topnav{display:none}.menu-btn{display:flex!important}}
+@media(max-width:768px){
+  .topbar-right{gap:6px;padding:0 10px}
+  .jornada-chip{display:none}
+  .user-nm{display:none}
+  .clock-date{display:none}
+  .content{padding:14px}
+  .tareas-grid{grid-template-columns:1fr}
+  .inv-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .section-title{font-size:22px}
+  .inv-grid{grid-template-columns:1fr}
+  .topbar-left{padding:0 12px;gap:10px}
+}
+</style>
+
+<script>
+// @ts-nocheck
+
+// @ts-nocheck
+// ── SESIÓN ──────────────────────────────────────────────────────
+// ── AUTH ────────────────────────────────────────────────────────
+const API = 'http://localhost:3000';
+if (!sessionStorage.getItem('hotel_token')) { window.location.replace('/logIn'); }
+const storedUser = sessionStorage.getItem('hotel_fullname') || sessionStorage.getItem('hotel_user') || 'Staff';
+const storedRole = sessionStorage.getItem('hotel_role') || 'staff';
+if (storedRole !== 'staff') { window.location.replace('/'+storedRole+'/dashboard'); }
+const avEl = document.getElementById('userAv');
+const unEl = document.getElementById('userName');
+
+async function apiFetch(method, path, body=null){
+  const token=sessionStorage.getItem('hotel_token');
+  const headers={'Content-Type':'application/json'};
+  if(token) headers['Authorization']='Bearer '+token;
+  const opts={method,headers}; if(body) opts.body=JSON.stringify(body);
+  try{
+    const res=await fetch(API+path,opts);
+    if(res.status===401){sessionStorage.clear();window.location.replace('/logIn');return null;}
+    return res.json();
+  }catch(e){console.error('[API]',path,e);return null;}
+}
+function showToast(msg,tipo='success'){const c={success:'var(--green)',warning:'var(--amber)',error:'var(--red)',info:'var(--blue)'};const t=document.createElement('div');t.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--bg3);border-left:4px solid '+c[tipo]+';color:var(--text);padding:12px 20px;font-family:Jost,sans-serif;font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);}
+function fmtRelTime(iso){const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return 'ahora';if(m<60)return 'hace '+m+'m';const h=Math.floor(m/60);if(h<24)return 'hace '+h+'h';return 'hace '+Math.floor(h/24)+'d';}
+if (avEl) avEl.textContent = storedUser.charAt(0).toUpperCase();
+if (unEl) unEl.textContent = storedUser;
+
+// ── TEMA ────────────────────────────────────────────────────────
+const root = document.documentElement;
+let manualOverride = false, currentTheme = 'night';
+const getAutoTheme = () => { const h = new Date().getHours(); return (h >= 6 && h < 18) ? 'day' : 'night'; };
+const applyTheme = (t) => { currentTheme = t; t === 'day' ? root.classList.add('day') : root.classList.remove('day'); };
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  manualOverride = true; applyTheme(currentTheme === 'day' ? 'night' : 'day');
+  setTimeout(() => { manualOverride = false; }, 7200000);
+});
+applyTheme(getAutoTheme());
+
+// RELOJ
+const clockTimeEl = document.getElementById('clockTime'), clockDateEl = document.getElementById('clockDate');
+function tick() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0'), m = String(now.getMinutes()).padStart(2,'0'), s = String(now.getSeconds()).padStart(2,'0');
+  if (clockTimeEl) clockTimeEl.textContent = h + ':' + m;
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'], meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  if (clockDateEl) clockDateEl.textContent = dias[now.getDay()] + ' ' + now.getDate() + ' ' + meses[now.getMonth()];
+  if (!manualOverride && getAutoTheme() !== currentTheme) applyTheme(getAutoTheme());
+}
+tick(); setInterval(tick, 1000);
+
+// ── JORNADA ─────────────────────────────────────────────────────
+function detectJornada() {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 14) return { label: 'Matutino', color: 'var(--gold)' };
+  if (h >= 14 && h < 22) return { label: 'Vespertino', color: 'var(--blue)' };
+  return { label: 'Nocturno', color: 'var(--teal)' };
+}
+const jornada = detectJornada();
+const jlEl = document.getElementById('jornadaLabel'), jdEl = document.getElementById('jornadaDot');
+if (jlEl) jlEl.textContent = jornada.label;
+if (jdEl) jdEl.style.background = jornada.color;
+
+// Turno horario
+const turnoHoras = { Matutino: '06:00 – 14:00', Vespertino: '14:00 – 22:00', Nocturno: '22:00 – 06:00' };
+const turnoStart = { Matutino: 6, Vespertino: 14, Nocturno: 22 };
+function getTurnoPct(): number {
+  const now = new Date(), start = turnoStart[jornada.label] || 6;
+  const elapsed = ((now.getHours() - start + 24) % 24) * 60 + now.getMinutes();
+  return Math.min(100, Math.max(0, Math.round(elapsed / 480 * 100)));
+}
+
+// ── DATOS ───────────────────────────────────────────────────────
+type Prioridad = 'urgente' | 'alta' | 'normal' | 'baja';
+type TareaCategoria = 'urgente' | 'limpieza' | 'servicio' | 'mantenimiento';
+type TareaStatus = TareaCategoria | 'completada';
+interface Tarea { id: number; hab: number; titulo: string; desc: string; tipo: TareaCategoria; prioridad: Prioridad; hora: string; completada: boolean; }
+
+// ── TAREAS desde API ────────────────────────────────────────────
+let tareasAPI = [];
+async function loadTareas(){
+  const data = await apiFetch('GET','/api/tasks'); if(!data) return;
+  tareasAPI=data; renderTareas(activeFilter); updateSidePanel();
+}
+async function completarTareaAPI(id){
+  await apiFetch('PATCH','/api/tasks/'+id+'/complete');
+  showToast('Tarea completada ✓'); loadTareas();
+}
+let nextTareaId = 9;
+const prioColors={1:'var(--red)',2:'var(--amber)',3:'var(--green)',4:'var(--blue)',urgent:'var(--red)',cleaning:'var(--green)',service:'var(--gold)',maintenance:'var(--blue)'};
+const prioClass={1:'urgente',2:'urgente',cleaning:'limpieza',service:'servicio',maintenance:'mantenimiento',urgent:'urgente'};
+function renderTareas(filter = 'todas') {
+  const tareas = tareasAPI.length ? tareasAPI.map(t=>({
+    id: t.id, titulo: t.title, desc: t.description||'', hab: t.roomNumber||'—',
+    tipo: t.type, prioridad: t.priority<=2||t.type==='urgent'?'urgente':t.type==='cleaning'?'limpieza':t.type==='service'?'servicio':'mantenimiento',
+    completada: t.status==='completed'||t.status==='cancelled', tiempo: t.scheduledFor||t.createdAt
+  })) : [];
+  const grid = document.getElementById('tareasGrid'); if (!grid) return;
+  const filtered = filter === 'todas' ? tareas : filter === 'completada' ? tareas.filter(t => t.completada) : tareas.filter(t => t.tipo === filter && !t.completada);
+  // Ordenar: urgentes primero, luego por hora
+  const prioOrder = {urgente:0,alta:1,normal:2,baja:3};
+  filtered.sort((a,b) => { if(a.completada !== b.completada) return a.completada?1:-1; return (prioOrder[a.prioridad]||2)-(prioOrder[b.prioridad]||2); });
+  grid.innerHTML = '';
+  filtered.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = `tarea-card ${t.completada ? 'completada' : t.tipo}`;
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML = `
+      <div class="tc-body">
+        <div class="tc-top">
+          <div class="tc-badges">
+            <span class="tc-tipo ${t.completada ? 'completada' : t.tipo}">${t.completada ? 'Completada' : t.tipo}</span>
+            <span class="tc-prio">${t.prioridad}</span>
+          </div>
+          <div class="tc-hab">${t.hab}</div>
+        </div>
+        <div class="tc-title">${t.titulo}</div>
+        <div class="tc-desc">${t.desc}</div>
+      </div>
+      <div class="tc-foot">
+        <span class="tc-time">⏱ ${t.hora}</span>
+        <button class="tc-check ${t.completada ? 'done' : ''}" onclick="toggleTarea(${t.id})">${t.completada ? '✓ Hecho' : 'Completar'}</button>
+      </div>`;
+    card.addEventListener('click', (e) => { if ((e.target).classList.contains('tc-check')) return; openTareaModal(t); });
+    grid.appendChild(card);
+  });
+
+  const td = document.getElementById('taskDesc');
+  if (td) td.textContent = `${tareas.filter(t=>!t.completada).length} pendientes · ${tareas.filter(t=>t.completada).length} completadas`;
+}
+renderTareas();
+
+function openTareaModal(t) {
+  openModal('Hab. ' + t.hab + ' · ' + t.titulo,
+    `<div class="detail-g"><div class="dg-item"><span class="dg-lbl">Tipo</span><span class="dg-val">${t.tipo}</span></div><div class="dg-item"><span class="dg-lbl">Prioridad</span><span class="dg-val">${t.prioridad}</span></div><div class="dg-item"><span class="dg-lbl">Hora programada</span><span class="dg-val">${t.hora}</span></div><div class="dg-item"><span class="dg-lbl">Estado</span><span class="dg-val">${t.completada?'Completada':'Pendiente'}</span></div></div><p style="font-size:12px;color:var(--text-m);line-height:1.6">${t.desc}</p>`,
+    `<button class="btn-ghost" onclick="closeModal()">Cerrar</button><button class="mf-btn" onclick="toggleTarea(${t.id});closeModal()"><span>${t.completada ? 'Reabrir' : 'Marcar completada'}</span></button>`
+  );
+}
+
+window.toggleTarea = (id) => {
+  completarTareaAPI(id);
+  const t = tareasAPI.find(x => x.id === id); if (!t) return;
+  t.completada = true;
+  if (t.completada) {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0'), m = String(now.getMinutes()).padStart(2,'0');
+    bitacora.unshift({id:nextBitaId++,hora:h+':'+m,titulo:t.titulo+' · Hab. '+t.hab,desc:'Tarea completada por '+storedUser+'.',tipo:'completada'});
+  }
+  const activeFilter = (document.querySelector('.pill.active'))?.getAttribute('data-tf') || 'todas';
+  renderTareas(activeFilter); updateSidePanel(); renderBitacora();
+};
+
+document.getElementById('taskFilters')?.addEventListener('click', (e) => {
+  const btn = (e.target).closest('.pill'); if (!btn) return;
+  document.querySelectorAll('[data-tf]').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  renderTareas(btn.getAttribute('data-tf') || 'todas');
+});
+
+document.getElementById('btnNewTask')?.addEventListener('click', () => {
+  openModal('Nueva tarea', `<div class="form-grid"><div class="form-field"><label>Habitación</label><input id="nt-hab" type="number" placeholder="Ej. 312" /></div><div class="form-field"><label>Título</label><input id="nt-title" placeholder="Descripción breve" /></div><div class="form-field"><label>Detalle</label><textarea id="nt-desc" rows="2" placeholder="Instrucciones adicionales…"></textarea></div><div class="form-field"><label>Tipo</label><select id="nt-tipo"><option value="limpieza">Limpieza</option><option value="servicio">Servicio</option><option value="mantenimiento">Mantenimiento</option><option value="urgente">Urgente</option></select></div><div class="form-field"><label>Hora</label><input id="nt-hora" type="time" /></div></div>`,
+    `<button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="mf-btn" onclick="saveNewTarea()"><span>Crear tarea</span></button>`
+  );
+});
+
+window.saveNewTarea = () => {
+  const hab = parseInt((document.getElementById('nt-hab')).value);
+  const title = (document.getElementById('nt-title')).value.trim();
+  const desc = (document.getElementById('nt-desc')).value.trim();
+  const tipo = (document.getElementById('nt-tipo')).value as TareaCategoria;
+  const hora = (document.getElementById('nt-hora')).value || '—';
+  if (!hab || !title) { alert('Habitación y título son requeridos.'); return; }
+  tareas.unshift({id:nextTareaId++,hab,titulo:title,desc:desc||'Sin descripción',tipo,prioridad:tipo==='urgente'?'urgente':'normal',hora,completada:false});
+  closeModal(); renderTareas(); updateSidePanel();
+};
+
+// ── SOLICITUDES ──────────────────────────────────────────────────
+function renderSolicitudes(filter = 'todas') {
+  const solicitudes = solicitudesAPI.map(s=>({id:s.id,hab:s.roomNumber||'—',urgencia:s.type==='urgent'?'urgente':'normal',msg:s.title||s.description||'—',tiempo:fmtRelTime(s.createdAt),atendida:s.status!=='open'}));
+  const list = document.getElementById('solList'); if (!list) return;
+  const filtered = filter === 'todas' ? solicitudes : solicitudes.filter(s => s.prioridad === filter);
+  filtered.sort((a,b) => { const o={urgente:0,normal:1,atendida:2}; return (o[a.prioridad]||1)-(o[b.prioridad]||1); });
+  list.innerHTML = '';
+  filtered.forEach((s, i) => {
+    const card = document.createElement('div'); card.className = 'sol-card'; card.style.animationDelay = (i*0.04)+'s';
+    card.innerHTML = `<div class="sol-accent ${s.prioridad}"></div><div class="sol-body"><div class="sol-top"><div class="sol-hab">${s.hab}</div><div class="sol-guest">${s.guest}</div></div><div class="sol-msg">${s.msg}</div><div class="sol-meta"><span class="sol-tag ${s.prioridad}">${s.prioridad}</span><span class="sol-time">${s.tiempo}</span></div></div><div class="sol-actions"><button class="sol-btn" onclick="verSol(${s.id})">Ver</button><button class="sol-btn ${s.prioridad==='atendida'?'atend':''}" onclick="atenderSol(${s.id})">${s.prioridad==='atendida'?'✓ Atendida':'Atender'}</button></div>`;
+    list.appendChild(card);
+  });
+}
+renderSolicitudes();
+
+window.verSol = (id) => {
+  const s = solicitudes.find(x => x.id === id); if (!s) return;
+  openModal('Solicitud · Hab. '+s.hab, `<div class="detail-g"><div class="dg-item"><span class="dg-lbl">Huésped</span><span class="dg-val">${s.guest}</span></div><div class="dg-item"><span class="dg-lbl">Prioridad</span><span class="dg-val">${s.prioridad}</span></div><div class="dg-item"><span class="dg-lbl">Tiempo</span><span class="dg-val">${s.tiempo}</span></div></div><p style="font-size:13px;color:var(--text);font-weight:300;line-height:1.6;margin-top:4px">"${s.msg}"</p>`,
+    `<button class="btn-ghost" onclick="closeModal()">Cerrar</button><button class="mf-btn" onclick="atenderSol(${s.id});closeModal()"><span>${s.prioridad==='atendida'?'Reabrir':'Marcar atendida'}</span></button>`
+  );
+};
+
+window.atenderSol = (id) => {
+  atenderSolicitudAPI(id);
+  const s = solicitudesAPI.find(x => x.id === id); if (!s) return;
+  s.prioridad = s.prioridad === 'atendida' ? 'normal' : 'atendida';
+  if (s.prioridad === 'atendida') {
+    const now = new Date(); const h = String(now.getHours()).padStart(2,'0'), m = String(now.getMinutes()).padStart(2,'0');
+    bitacora.unshift({id:nextBitaId++,hora:h+':'+m,titulo:'Solicitud atendida · Hab. '+s.hab,desc:s.msg.slice(0,80)+(s.msg.length>80?'…':''),tipo:'solicitud'});
+    renderBitacora();
+  }
+  const af = (document.querySelector('[data-sf].active'))?.getAttribute('data-sf') || 'todas';
+    atenderSolicitudAPI(s.id||s); renderSolicitudes(af); updateSidePanel();;
+
+document.querySelectorAll('[data-sf]').forEach(btn => {
+  btn.addEventListener('click', () => { document.querySelectorAll('[data-sf]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderSolicitudes(btn.getAttribute('data-sf') || 'todas'); });
+});
+
+// ── INVENTARIO ───────────────────────────────────────────────────
+function renderInventario() {
+  const inventario = inventarioAPI.map(i=>({id:i.id,nombre:i.name,cat:i.category,qty:i.quantity,max:i.maxQuantity,min:i.minQuantity,unidad:i.unit}));
+  const grid = document.getElementById('invGrid'); if (!grid) return;
+  grid.innerHTML = '';
+  inventario.forEach((item) => {
+    const pct = Math.round(item.qty / item.max * 100);
+    const status = pct > 50 ? 'ok' : pct > 20 ? 'mid' : 'low';
+    const statusLabel = pct > 50 ? 'Suficiente' : pct > 20 ? 'Bajo' : '⚠ Crítico';
+    const card = document.createElement('div'); card.className = 'inv-card'; card.style.setProperty('--i',String(i)); card.style.animationDelay=(i*0.04)+'s';
+    card.innerHTML = `
+      <div class="inv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+      <div class="inv-name">${item.nombre}</div>
+      <div class="inv-cat">${item.cat}</div>
+      <div class="inv-bar-bg"><div class="inv-bar-fill ${status}" style="width:0" data-w="${pct}%"></div></div>
+      <div class="inv-bottom">
+        <span><span class="inv-qty">${item.qty}</span><span class="inv-max"> / ${item.max} ${item.unidad}</span></span>
+        <span class="inv-status ${status}">${statusLabel}</span>
+      </div>
+      <div class="inv-actions">
+        <button class="inv-btn" onclick="adjustInv(${item.id},-1)">−</button>
+        <button class="inv-btn" onclick="adjustInv(${item.id},1)">+</button>
+        <button class="inv-btn req" onclick="requestInv(${item.id})">Solicitar</button>
+      </div>`;
+    grid.appendChild(card);
+    setTimeout(() => { const fill = card.querySelector('.inv-bar-fill'); if(fill) fill.style.width = fill.getAttribute('data-w') || '0'; }, 100 + iIdx * 40);
+  });
+}
+loadInventario();
+
+window.adjustInv = (id, delta) => {
+  ajustarInventario(id, delta);
+};
+window.requestInv = (id) => {
+  solicitarReposicion(id);
+};
+window.confirmRequest = (id) => {
+  closeModal();
+  const item = inventario.find(x => x.id === id); if (!item) return;
+  const now = new Date(); const h = String(now.getHours()).padStart(2,'0'), m = String(now.getMinutes()).padStart(2,'0');
+  bitacora.unshift({id:nextBitaId++,hora:h+':'+m,titulo:'Solicitud de reposición',desc:item.nombre+' — stock bajo ('+item.qty+'/'+item.max+').',tipo:'nota'});
+  renderBitacora();
+};
+
+document.getElementById('btnReporte')?.addEventListener('click', () => {
+  const low = inventario.filter(i => i.qty/i.max <= 0.2);
+  const mid = inventario.filter(i => i.qty/i.max > 0.2 && i.qty/i.max <= 0.5);
+  openModal('Reporte de inventario',
+    `<p style="margin-bottom:14px;color:var(--text-m)">Estado del inventario al cierre de turno.</p>${low.length?`<p style="color:var(--red);font-size:11px;margin-bottom:8px">⚠ Crítico (${low.length}): ${low.map(i=>i.nombre).join(', ')}</p>`:''}${mid.length?`<p style="color:var(--amber);font-size:11px;margin-bottom:8px">↓ Bajo (${mid.length}): ${mid.map(i=>i.nombre).join(', ')}</p>`:''}${(!low.length&&!mid.length)?`<p style="color:var(--green);font-size:11px">✓ Todo en orden.</p>`:''}`,
+    `<button class="btn-ghost" onclick="closeModal()">Cerrar</button>`
+  );
+});
+
+// ── BITÁCORA ─────────────────────────────────────────────────────
+function renderBitacora() {
+  const el = document.getElementById('bitacora'); if (!el) return;
+  el.innerHTML = '';
+  [...bitacora].sort((a,b) => b.id - a.id).forEach((entry, i) => {
+    const div = document.createElement('div'); div.className = 'bita-entry'; div.style.animationDelay = (i*0.04)+'s';
+    div.innerHTML = `<div class="bita-dot-wrap"><div class="bita-dot ${entry.tipo}"></div></div><div class="bita-content"><div class="bita-time">${entry.hora}</div><div class="bita-title">${entry.titulo}</div><div class="bita-desc">${entry.desc}</div><span class="bita-tag ${entry.tipo}">${entry.tipo}</span></div>`;
+    el.appendChild(div);
+  });
+
+  // Resumen
+  const rr = document.getElementById('regResumen');
+  if (rr) {
+    const counts = {};
+    bitacora.forEach(b => { counts[b.tipo] = (counts[b.tipo]||0)+1; });
+    rr.innerHTML = `<div class="rr-title">Resumen del turno</div>${Object.entries(counts).map(([k,v])=>`<div class="rr-item"><span class="rr-lbl">${k.charAt(0).toUpperCase()+k.slice(1)}</span><span class="rr-val">${v}</span></div>`).join('')}<div class="rr-item" style="margin-top:8px"><span class="rr-lbl">Total entradas</span><span class="rr-val">${bitacora.length}</span></div>`;
+  }
+}
+renderBitacora();
+
+document.getElementById('btnAddLog')?.addEventListener('click', () => {
+  openModal('Agregar nota al turno', `<div class="form-grid"><div class="form-field"><label>Tipo de entrada</label><select id="log-tipo"><option value="nota">Nota</option><option value="limpieza">Limpieza</option><option value="servicio">Servicio</option><option value="mantenimiento">Mantenimiento</option><option value="solicitud">Solicitud</option></select></div><div class="form-field"><label>Título</label><input id="log-title" placeholder="Resumen breve…" /></div><div class="form-field"><label>Descripción</label><textarea id="log-desc" rows="3" placeholder="Detalle de la actividad…"></textarea></div></div>`,
+    `<button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="mf-btn" onclick="saveLog()"><span>Registrar</span></button>`
+  );
+});
+
+window.saveLog = () => {
+  const tipo = (document.getElementById('log-tipo')).value;
+  const title = (document.getElementById('log-title')).value.trim();
+  const desc = (document.getElementById('log-desc')).value.trim();
+  if (!title) { alert('El título es requerido.'); return; }
+  const now = new Date(); const h = String(now.getHours()).padStart(2,'0'), m = String(now.getMinutes()).padStart(2,'0');
+  bitacora.unshift({id:nextBitaId++,hora:h+':'+m,titulo:title,desc:desc||'—',tipo});
+  closeModal(); renderBitacora();
+};
+
+// ── SOLICITUDES desde API ────────────────────────────────────────
+let solicitudesAPI = [];
+async function loadSolicitudes(){
+  const data = await apiFetch('GET','/api/incidents?status=open'); if(!data) return;
+  solicitudesAPI = data.filter(i => i.type==='request' || i.type==='urgent');
+  renderSolicitudes();
+}
+
+// ── WebSocket ────────────────────────────────────────────────────
+function conectarWS(){
+  const role  = sessionStorage.getItem('hotel_role') || 'staff';
+  const token = sessionStorage.getItem('hotel_token') || '';
+  const wsUrl = API.replace('http','ws');
+  const ws = new WebSocket(wsUrl + '/live?role=' + role + '&token=' + token);
+  ws.onopen = () => { setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({type:'ping'})), 30000); };
+  ws.onmessage = ({data}) => {
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === 'new_task')         { loadTareas();     showToast('Nueva tarea asignada','info'); }
+      if (msg.type === 'assigned_incident'){ loadSolicitudes(); showToast('Nueva solicitud asignada','warning'); }
+    } catch {}
+  };
+  ws.onclose = () => setTimeout(conectarWS, 3000);
+}
+
+// ── INICIALIZACIÓN ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadTareas();
+  loadSolicitudes();
+  loadInventario();
+  conectarWS();
+});
+}
+</script>
