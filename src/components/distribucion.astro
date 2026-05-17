@@ -609,9 +609,14 @@ const { floor = 0, class: className = '' } = Astro.props;
       cell.addEventListener('mouseleave', hideTip);
 
       // Click → emite evento para que el dashboard abra el modal
+      // Sin guards de estado — TODOS los estados son clickeables
       cell.addEventListener('click', () => {
         hideTip();
-        wrap.dispatchEvent(new CustomEvent('dist-room-click', { detail: r, bubbles: true }));
+        wrap.dispatchEvent(new CustomEvent('dist-room-click', {
+          detail: r,
+          bubbles: true,
+          composed: true,
+        }));
       });
 
       return cell;
