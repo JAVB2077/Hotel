@@ -1,0 +1,792 @@
+---
+// src/components/distribucion.astro
+// Mapa arquitectónico de distribución de habitaciones con estado en tiempo real.
+// Muestra las habitaciones de un piso como plano de planta con colores por estado
+// y tooltip con detalles al pasar el cursor.
+
+interface Props {
+  floor?: number; // 0 = todos los pisos, 1-7 = piso específico
+  class?: string;
+}
+const { floor = 0, class: className = '' } = Astro.props;
+---
+
+<div class={`dist-wrap ${className}`} data-floor={String(floor)}>
+  <div class="dist-tabs-row" aria-label="Selector de piso"></div>
+  <div class="dist-scroll">
+    <div class="dist-plan">
+      <div class="dist-loading">
+        <div class="dist-spinner"></div>
+        <span>Cargando planta…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  /* ── Variables locales ── */
+  .dist-wrap {
+    --wall:      rgba(110, 100, 82, 0.65);
+    --wall-ext:  rgba(110, 100, 82, 0.95);
+    --hall-bg:   rgba(0, 0, 0, 0.08);
+    --rw: 72px;
+    --rh: 60px;
+    --arc: 14px;
+    position: relative;
+    width: 100%;
+    font-family: 'Jost', sans-serif;
+  }
+  :root.day .dist-wrap {
+    --wall:      rgba(72, 60, 42, 0.55);
+    --wall-ext:  rgba(72, 60, 42, 0.9);
+    --hall-bg:   rgba(0, 0, 0, 0.04);
+  }
+
+  /* ── Tabs de piso ── */
+  .dist-tabs-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .dist-ptab {
+    padding: 4px 14px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: 'Jost', sans-serif;
+    background: transparent;
+    border: 1px solid var(--border, rgba(201,169,110,0.1));
+    color: var(--text-m, #8a8680);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .dist-ptab:hover {
+    border-color: var(--border-h, rgba(201,169,110,0.28));
+    color: var(--text, #e8e4dc);
+  }
+  .dist-ptab.active {
+    background: var(--gold-dim, rgba(201,169,110,0.12));
+    border-color: var(--gold, #c9a96e);
+    color: var(--gold, #c9a96e);
+  }
+
+  /* ── Contenedor con scroll horizontal ── */
+  .dist-scroll {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  /* ── Loading state ── */
+  .dist-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 32px 24px;
+    color: var(--text-d, #4a4a52);
+    font-size: 12px;
+    justify-content: center;
+  }
+  .dist-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border, rgba(201,169,110,0.1));
+    border-top-color: var(--gold, #c9a96e);
+    border-radius: 50%;
+    animation: dist-spin 0.75s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes dist-spin { to { transform: rotate(360deg); } }
+
+  /* ── Sección por piso ── */
+  .dist-floor-section {
+    margin-bottom: 20px;
+  }
+  .dist-floor-label {
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-d, #4a4a52);
+    margin-bottom: 8px;
+    padding-left: 2px;
+    font-family: 'Jost', sans-serif;
+  }
+
+  /* ── Edificio (plano arquitectónico) ── */
+  .dist-building {
+    display: inline-flex;
+    flex-direction: column;
+    border: 3px solid var(--wall-ext);
+    background: var(--bg2, #111113);
+    min-width: max-content;
+    transition: background 0.5s;
+  }
+
+  /* ── Filas de habitaciones ── */
+  .dist-row {
+    display: flex;
+  }
+
+  /* ── Pasillo ── */
+  .dist-hallway {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    background: var(--hall-bg);
+    border-top: 1px solid var(--wall);
+    border-bottom: 1px solid var(--wall);
+    font-size: 8px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--text-d, #4a4a52);
+    font-family: 'Jost', sans-serif;
+    user-select: none;
+  }
+
+  /* ── Celda de habitación ── */
+  .dist-room {
+    width: var(--rw);
+    height: var(--rh);
+    border-right: 2px solid var(--wall);
+    border-bottom: 2px solid var(--wall);
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: filter 0.15s, transform 0.15s;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg3, #18181c);
+  }
+  /* Borde superior solo para la primera fila (norte) */
+  .dist-row-north .dist-room {
+    border-top: 2px solid var(--wall);
+  }
+  /* Primera habitación de cada fila lleva borde izquierdo */
+  .dist-room:first-child {
+    border-left: 2px solid var(--wall);
+  }
+  /* Hover */
+  .dist-room:hover {
+    filter: brightness(1.18);
+    z-index: 10;
+    transform: scale(1.04);
+  }
+  /* Indicador de incidencia (punto rojo superior derecho) */
+  .dist-room.has-inc::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--red, #e05555);
+    z-index: 3;
+    box-shadow: 0 0 4px rgba(224,85,85,0.6);
+  }
+
+  /* ── Franja de color (estado) en la parte norte y sur ── */
+  .dist-room::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 2;
+  }
+  .dist-row-north .dist-room::before { top: 0; }
+  .dist-row-south .dist-room::before { bottom: 0; }
+
+  /* ── Relleno semitransparente por estado ── */
+  .dist-fill {
+    position: absolute;
+    inset: 0;
+    opacity: 0.09;
+    pointer-events: none;
+    z-index: 0;
+    transition: background 0.3s;
+  }
+
+  /* ── Arco de puerta (icono arquitectónico) ── */
+  .dist-arc {
+    position: absolute;
+    width: var(--arc);
+    height: var(--arc);
+    border: 1.5px solid var(--wall);
+    z-index: 1;
+  }
+  .dist-row-north .dist-arc {
+    bottom: 4px;
+    left: 4px;
+    border-top: none;
+    border-left: none;
+    border-radius: 0 0 100% 0;
+  }
+  .dist-row-south .dist-arc {
+    top: 4px;
+    left: 4px;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 0 100% 0 0;
+  }
+
+  /* ── Número de habitación ── */
+  .dist-num {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text, #e8e4dc);
+    position: relative;
+    z-index: 2;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  /* ── Tipo de habitación ── */
+  .dist-tipo {
+    font-size: 7.5px;
+    color: var(--text-d, #4a4a52);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 2;
+    max-width: calc(var(--rw) - 10px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    line-height: 1;
+  }
+
+  /* ── Colores por estado — franja (::before) ── */
+  .st-ocupada::before         { background: var(--status-ocupada, #c9a96e); }
+  .st-libre-limpia::before    { background: var(--status-libre-limpia, #4caf82); }
+  .st-libre-sucia::before     { background: var(--status-libre-sucia, #f0a500); }
+  .st-reservada::before       { background: var(--status-reservada, #6b8cff); }
+  .st-checkout::before        { background: var(--status-checkout, #3ec9c9); }
+  .st-mantenimiento::before   { background: var(--status-mantenimiento, #e05555); }
+  .st-bloqueada::before       { background: var(--status-bloqueada, #4a4a5a); }
+
+  /* ── Colores por estado — relleno (.dist-fill) ── */
+  .st-ocupada .dist-fill         { background: var(--status-ocupada, #c9a96e); }
+  .st-libre-limpia .dist-fill    { background: var(--status-libre-limpia, #4caf82); }
+  .st-libre-sucia .dist-fill     { background: var(--status-libre-sucia, #f0a500); }
+  .st-reservada .dist-fill       { background: var(--status-reservada, #6b8cff); }
+  .st-checkout .dist-fill        { background: var(--status-checkout, #3ec9c9); }
+  .st-mantenimiento .dist-fill   { background: var(--status-mantenimiento, #e05555); }
+  .st-bloqueada .dist-fill       { background: var(--status-bloqueada, #4a4a5a); opacity: 0.18; }
+
+  /* Habitación bloqueada: número atenuado */
+  .st-bloqueada .dist-num  { color: var(--text-d, #4a4a52); }
+  .st-bloqueada .dist-tipo { color: var(--text-d, #4a4a52); opacity: 0.5; }
+
+  /* ── Tooltip global ── */
+  #dist-tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+    max-width: 230px;
+    min-width: 160px;
+    background: var(--bg3, #18181c);
+    border: 1px solid var(--border-h, rgba(201,169,110,0.28));
+    padding: 12px 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    font-family: 'Jost', sans-serif;
+    animation: dist-ttfade 0.12s ease;
+  }
+  @keyframes dist-ttfade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tt-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .tt-num {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text, #e8e4dc);
+  }
+  .tt-badge {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+  }
+  .tt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 10px;
+    color: var(--text-m, #8a8680);
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+  .tt-val {
+    color: var(--text, #e8e4dc);
+    font-weight: 400;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .tt-alert {
+    font-size: 9.5px;
+    margin-top: 7px;
+    padding: 4px 8px;
+    letter-spacing: 0.06em;
+  }
+  /* Colores badge por estado */
+  .tt-st-ocupada       { background: rgba(201,169,110,0.15); color: #c9a96e; }
+  .tt-st-libre-limpia  { background: rgba(76,175,130,0.15);  color: #4caf82; }
+  .tt-st-libre-sucia   { background: rgba(240,165,0,0.15);   color: #f0a500; }
+  .tt-st-reservada     { background: rgba(107,140,255,0.15); color: #6b8cff; }
+  .tt-st-checkout      { background: rgba(62,201,201,0.15);  color: #3ec9c9; }
+  .tt-st-mantenimiento { background: rgba(224,85,85,0.15);   color: #e05555; }
+  .tt-st-bloqueada     { background: rgba(74,74,90,0.2);     color: #8a8a9a; }
+</style>
+
+<script>
+  // Inicializar todas las instancias del componente en la página
+  (function initAll() {
+    document.querySelectorAll<HTMLElement>('.dist-wrap:not([data-dist-init])').forEach(wrap => {
+      wrap.setAttribute('data-dist-init', '1');
+      initDistribucion(wrap);
+    });
+  })();
+
+  function initDistribucion(wrap: HTMLElement) {
+    const API       = 'http://localhost:3000';
+    const initFloor = Number(wrap.dataset.floor ?? '0');
+    const tabsEl    = wrap.querySelector<HTMLElement>('.dist-tabs-row')!;
+    const planEl    = wrap.querySelector<HTMLElement>('.dist-plan')!;
+
+    let currentFloor = initFloor;
+    let allRooms: Room[] = [];
+    let searchQuery   = '';
+
+    // ── Tooltip global (se crea una sola vez en el body) ─────────────
+    let tooltip = document.getElementById('dist-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'dist-tooltip';
+      document.body.appendChild(tooltip);
+    }
+
+    // ── Tipos ─────────────────────────────────────────────────────────
+    type RoomStatus =
+      | 'ocupada' | 'libre-limpia' | 'libre-sucia'
+      | 'reservada' | 'checkout' | 'mantenimiento' | 'bloqueada';
+
+    interface Room {
+      num: number;
+      tipo: string;
+      piso: number;
+      status: RoomStatus;
+      guest: string | null;
+      checkIn: string | null;
+      checkOut: string | null;
+      nights: number | null;
+      notas: string | null;
+      hasInc: boolean;
+      capacidad: number | null;
+      camas: string | null;
+      horaLimite: string | null;
+      vista: string | null;
+    }
+
+    // ── Datos estáticos ───────────────────────────────────────────────
+    const statusLabels: Record<string, string> = {
+      'ocupada':       'Ocupada',
+      'libre-limpia':  'Libre · Limpia',
+      'libre-sucia':   'Libre · Sucia',
+      'reservada':     'Reservada hoy',
+      'checkout':      'Check-out hoy',
+      'mantenimiento': 'Mantenimiento',
+      'bloqueada':     'Bloqueada',
+    };
+
+    const floorNames: Record<number, string> = {
+      1: 'Piso 1 — Estándar',
+      2: 'Piso 2 — Doble',
+      3: 'Piso 3 — Suite',
+      4: 'Piso 4 — Jr. Suite',
+      5: 'Piso 5 — Suite Deluxe',
+      6: 'Piso 6 — Ejecutivo',
+      7: 'Piso 7 — Penthouse',
+    };
+
+    // ── Normalizar respuesta de la API ────────────────────────────────
+    function normalizeRoom(r: any): Room {
+      return {
+        num:     r.number    ?? r.num        ?? r.roomNumber ?? 0,
+        tipo:    r.type      ?? r.roomType   ?? r.tipo       ?? 'Habitación',
+        piso:    r.floor     ?? r.piso       ?? 1,
+        status: (r.status    ?? 'libre-limpia') as RoomStatus,
+        guest:   r.guestName ?? r.guest      ?? null,
+        checkIn: r.checkInDate  ?? r.checkIn  ?? null,
+        checkOut:r.checkOutDate ?? r.checkOut ?? null,
+        nights:  r.nights       ?? null,
+        notas:      r.notes        ?? r.notas        ?? null,
+        hasInc:     r.hasIncidence ?? r.hasInc        ?? false,
+        capacidad:  r.capacity     ?? r.capacidad     ?? r.maxOccupancy ?? null,
+        camas:      r.beds         ?? r.camas         ?? r.bedType      ?? null,
+        horaLimite: r.checkoutTime ?? r.horaLimite    ?? null,
+        vista:      r.view         ?? r.vista         ?? null,
+      };
+    }
+
+    // ── Fetch ─────────────────────────────────────────────────────────
+    async function fetchRooms(): Promise<any[] | null> {
+      const token = sessionStorage.getItem('hotel_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      try {
+        const res = await fetch(API + '/api/rooms', { headers });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (e) {
+        console.error('[distribucion] fetch:', e);
+        return null;
+      }
+    }
+
+    // ── Formatear fecha ───────────────────────────────────────────────
+    function fmtDate(d: string | null): string {
+      if (!d) return '—';
+      const ms = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      if (d.includes('-')) {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.getDate() + ' ' + ms[dt.getMonth()];
+      }
+      return d;
+    }
+
+    // ── Días hasta checkout ───────────────────────────────────────────
+    function diasHasta(dateStr: string | null): number | null {
+      if (!dateStr || !dateStr.includes('-')) return null;
+      const co = new Date(dateStr + 'T00:00:00');
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      return Math.round((co.getTime() - hoy.getTime()) / 86400000);
+    }
+
+    // ── Construir HTML del tooltip ────────────────────────────────────
+    function buildTooltipHtml(r: Room): string {
+      const st = r.status;
+      const stLabel = statusLabels[st] || st;
+      let rows = '';
+
+      // Tipo siempre visible
+      rows += `<div class="tt-row"><span>Tipo</span><span class="tt-val">${r.tipo}</span></div>`;
+
+      // Características físicas (si la API las devuelve)
+      if (r.capacidad) rows += `<div class="tt-row"><span>Capacidad</span><span class="tt-val">${r.capacidad} pax</span></div>`;
+      if (r.camas)     rows += `<div class="tt-row"><span>Camas</span><span class="tt-val">${r.camas}</span></div>`;
+      if (r.vista)     rows += `<div class="tt-row"><span>Vista</span><span class="tt-val">${r.vista}</span></div>`;
+
+      // ── Info específica por estado ────────────────────────────────
+      if (st === 'ocupada') {
+        if (r.guest)
+          rows += `<div class="tt-row"><span>Huésped</span><span class="tt-val">${r.guest}</span></div>`;
+        if (r.checkIn)
+          rows += `<div class="tt-row"><span>Check-in</span><span class="tt-val">${fmtDate(r.checkIn)}</span></div>`;
+        if (r.checkOut) {
+          const dias = diasHasta(r.checkOut);
+          let suf = '';
+          if (dias !== null) {
+            if (dias <= 0) suf = ' <span style="color:var(--status-checkout,#3ec9c9)">(vence hoy)</span>';
+            else if (dias === 1) suf = ' <span style="color:var(--text-m,#8a8680)">(mañana)</span>';
+            else suf = ` <span style="color:var(--text-m,#8a8680)">(${dias}d restantes)</span>`;
+          }
+          rows += `<div class="tt-row"><span>Check-out</span><span class="tt-val">${fmtDate(r.checkOut)}${suf}</span></div>`;
+        }
+        if (r.nights)
+          rows += `<div class="tt-row"><span>Estancia</span><span class="tt-val">${r.nights} noches</span></div>`;
+
+      } else if (st === 'checkout') {
+        if (r.guest)
+          rows += `<div class="tt-row"><span>Huésped</span><span class="tt-val">${r.guest}</span></div>`;
+        if (r.nights)
+          rows += `<div class="tt-row"><span>Estancia</span><span class="tt-val">${r.nights} noches</span></div>`;
+        const limite = r.horaLimite || '12:00 hrs';
+        rows += `<div class="tt-row"><span>Hora límite</span><span class="tt-val" style="color:var(--status-checkout,#3ec9c9)">${limite}</span></div>`;
+        rows += `<div class="tt-alert" style="background:rgba(62,201,201,0.1);color:#3ec9c9">→ Check-out pendiente · salida antes de ${limite}</div>`;
+
+      } else if (st === 'reservada') {
+        if (r.guest)
+          rows += `<div class="tt-row"><span>Huésped</span><span class="tt-val">${r.guest}</span></div>`;
+        if (r.checkIn)
+          rows += `<div class="tt-row"><span>Llegada</span><span class="tt-val">${fmtDate(r.checkIn)}</span></div>`;
+        if (r.checkOut)
+          rows += `<div class="tt-row"><span>Salida</span><span class="tt-val">${fmtDate(r.checkOut)}</span></div>`;
+        if (r.nights)
+          rows += `<div class="tt-row"><span>Estancia</span><span class="tt-val">${r.nights} noches</span></div>`;
+        rows += `<div class="tt-alert" style="background:rgba(107,140,255,0.1);color:#6b8cff">✦ Llegada programada hoy · preparar habitación</div>`;
+
+      } else if (st === 'libre-limpia') {
+        rows += `<div class="tt-alert" style="background:rgba(76,175,130,0.1);color:#4caf82">✓ Lista para asignar · habitación disponible</div>`;
+
+      } else if (st === 'libre-sucia') {
+        rows += `<div class="tt-alert" style="background:rgba(240,165,0,0.1);color:#f0a500">⚠ Requiere limpieza antes de asignar</div>`;
+
+      } else if (st === 'mantenimiento') {
+        if (r.notas)
+          rows += `<div class="tt-row" style="flex-wrap:wrap;gap:4px"><span>Notas</span><span class="tt-val" style="white-space:normal;word-break:break-word">${r.notas}</span></div>`;
+        rows += `<div class="tt-alert" style="background:rgba(224,85,85,0.1);color:#e05555">✕ Fuera de servicio · no disponible</div>`;
+
+      } else if (st === 'bloqueada') {
+        rows += `<div class="tt-alert" style="background:rgba(74,74,90,0.15);color:#8a8a9a">◼ Acceso bloqueado por administración</div>`;
+      }
+
+      // Incidencia activa (se muestra en todos los estados)
+      if (r.hasInc)
+        rows += `<div class="tt-alert" style="background:rgba(224,85,85,0.12);color:#e05555;margin-top:4px">⚠ Incidencia activa registrada</div>`;
+
+      // Notas generales (excepto mantenimiento que ya las muestra arriba)
+      if (r.notas && st !== 'mantenimiento')
+        rows += `<div class="tt-row" style="margin-top:6px;flex-wrap:wrap;gap:4px"><span>Notas</span><span class="tt-val" style="word-break:break-word;white-space:normal">${r.notas}</span></div>`;
+
+      return `
+        <div class="tt-head">
+          <span class="tt-num">Hab. ${r.num}</span>
+          <span class="tt-badge tt-st-${st}">${stLabel}</span>
+        </div>
+        ${rows}
+      `;
+    }
+
+    // ── Tooltip: mostrar / ocultar / posicionar ───────────────────────
+    let ttActive = false;
+
+    function showTip(r: Room, mx: number, my: number) {
+      tooltip!.innerHTML = buildTooltipHtml(r);
+      tooltip!.style.display = 'block';
+      ttActive = true;
+      posTip(mx, my);
+    }
+
+    function posTip(mx: number, my: number) {
+      const tw = (tooltip as HTMLElement).offsetWidth  || 220;
+      const th = (tooltip as HTMLElement).offsetHeight || 120;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let left = mx + 18;
+      let top  = my - 12;
+      if (left + tw > vw - 12) left = mx - tw - 18;
+      if (top + th  > vh - 12) top  = vh - th - 12;
+      if (top < 8) top = 8;
+      (tooltip as HTMLElement).style.left = left + 'px';
+      (tooltip as HTMLElement).style.top  = top  + 'px';
+    }
+
+    function hideTip() {
+      (tooltip as HTMLElement).style.display = 'none';
+      ttActive = false;
+    }
+
+    // ── Crear celda de habitación ─────────────────────────────────────
+    function makeCell(r: Room, side: 'north' | 'south'): HTMLElement {
+      const cell = document.createElement('div');
+      cell.className = `dist-room dist-row-${side} st-${r.status}${r.hasInc ? ' has-inc' : ''}`;
+
+      // Relleno semitransparente
+      const fill = document.createElement('div');
+      fill.className = 'dist-fill';
+      cell.appendChild(fill);
+
+      // Arco de puerta
+      const arc = document.createElement('div');
+      arc.className = 'dist-arc';
+      cell.appendChild(arc);
+
+      // Número
+      const num = document.createElement('div');
+      num.className = 'dist-num';
+      num.textContent = String(r.num);
+      cell.appendChild(num);
+
+      // Tipo
+      const tipo = document.createElement('div');
+      tipo.className = 'dist-tipo';
+      tipo.textContent = r.tipo;
+      cell.appendChild(tipo);
+
+      // Eventos hover
+      cell.addEventListener('mouseenter', (e: MouseEvent) => showTip(r, e.clientX, e.clientY));
+      cell.addEventListener('mousemove',  (e: MouseEvent) => { if (ttActive) posTip(e.clientX, e.clientY); });
+      cell.addEventListener('mouseleave', hideTip);
+
+      // Click: emite evento para que el dashboard pueda abrir su modal
+      cell.addEventListener('click', () => {
+        hideTip();
+        wrap.dispatchEvent(new CustomEvent('dist-room-click', { detail: r, bubbles: true }));
+      });
+
+      return cell;
+    }
+
+    // ── Renderizar el plano de un piso ────────────────────────────────
+    function renderFloorPlan(rooms: Room[]): HTMLElement | string {
+      if (!rooms.length) {
+        return '<div class="dist-loading" style="padding:20px"><span>Sin habitaciones en este piso</span></div>';
+      }
+
+      const building = document.createElement('div');
+      building.className = 'dist-building';
+
+      // Dividir en norte (primera mitad) y sur (segunda mitad)
+      const mid   = Math.ceil(rooms.length / 2);
+      const north = rooms.slice(0, mid);
+      const south = rooms.slice(mid);
+
+      // Fila norte
+      const rowN = document.createElement('div');
+      rowN.className = 'dist-row dist-row-north';
+      north.forEach(r => rowN.appendChild(makeCell(r, 'north')));
+      building.appendChild(rowN);
+
+      // Pasillo
+      const hall = document.createElement('div');
+      hall.className = 'dist-hallway';
+      hall.textContent = 'P A S I L L O';
+      building.appendChild(hall);
+
+      // Fila sur
+      if (south.length) {
+        const rowS = document.createElement('div');
+        rowS.className = 'dist-row dist-row-south';
+        south.forEach(r => rowS.appendChild(makeCell(r, 'south')));
+        building.appendChild(rowS);
+      }
+
+      return building;
+    }
+
+    // ── Filtrar habitaciones por búsqueda ─────────────────────────────
+    function applySearch(rooms: Room[]): Room[] {
+      if (!searchQuery) return rooms;
+      const q = searchQuery;
+      return rooms.filter(r =>
+        String(r.num).includes(q) ||
+        (r.guest || '').toLowerCase().includes(q) ||
+        r.tipo.toLowerCase().includes(q),
+      );
+    }
+
+    // ── Renderizar plan completo ──────────────────────────────────────
+    function renderPlan(floor: number) {
+      planEl.innerHTML = '';
+
+      const base  = floor === 0 ? allRooms : allRooms.filter(r => r.piso === floor);
+      const rooms = applySearch(base);
+
+      if (floor === 0) {
+        // Todos los pisos apilados
+        const byFloor: Record<number, Room[]> = {};
+        rooms.forEach(r => {
+          if (!byFloor[r.piso]) byFloor[r.piso] = [];
+          byFloor[r.piso].push(r);
+        });
+
+        const floors = Object.keys(byFloor).map(Number).sort((a, b) => a - b);
+        floors.forEach(p => {
+          const section = document.createElement('div');
+          section.className = 'dist-floor-section';
+
+          const label = document.createElement('div');
+          label.className = 'dist-floor-label';
+          label.textContent = floorNames[p] || `Piso ${p}`;
+          section.appendChild(label);
+
+          const plan = renderFloorPlan(byFloor[p]);
+          if (typeof plan === 'string') {
+            section.innerHTML += plan;
+          } else {
+            section.appendChild(plan);
+          }
+          planEl.appendChild(section);
+        });
+      } else {
+        const plan = renderFloorPlan(rooms);
+        if (typeof plan === 'string') {
+          planEl.innerHTML = plan;
+        } else {
+          planEl.appendChild(plan);
+        }
+      }
+    }
+
+    // ── Construir tabs de piso ────────────────────────────────────────
+    function buildTabs(floors: number[]) {
+      tabsEl.innerHTML = '';
+      if (floors.length <= 1 && initFloor !== 0) return;
+
+      // Tab "Todos" solo si el componente está en modo multi-piso
+      if (initFloor === 0) {
+        const all = document.createElement('button');
+        all.className = 'dist-ptab' + (currentFloor === 0 ? ' active' : '');
+        all.textContent = 'Todos';
+        all.addEventListener('click', () => {
+          setActive(all);
+          currentFloor = 0;
+          renderPlan(0);
+        });
+        tabsEl.appendChild(all);
+      }
+
+      floors.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'dist-ptab' + (currentFloor === f ? ' active' : '');
+        btn.textContent = 'P' + f;
+        btn.title = floorNames[f] || 'Piso ' + f;
+        btn.addEventListener('click', () => {
+          setActive(btn);
+          currentFloor = f;
+          renderPlan(f);
+        });
+        tabsEl.appendChild(btn);
+      });
+    }
+
+    function setActive(active: HTMLElement) {
+      tabsEl.querySelectorAll('.dist-ptab').forEach(b => b.classList.remove('active'));
+      active.classList.add('active');
+    }
+
+    // ── Inicialización ────────────────────────────────────────────────
+    async function init() {
+      planEl.innerHTML = `<div class="dist-loading"><div class="dist-spinner"></div><span>Cargando planta…</span></div>`;
+
+      const data = await fetchRooms();
+
+      if (!data || !Array.isArray(data)) {
+        planEl.innerHTML = `<div class="dist-loading"><span style="color:var(--red,#e05555)">Error al cargar habitaciones. Verifica la conexión.</span></div>`;
+        return;
+      }
+
+      allRooms = data.map(normalizeRoom);
+
+      const floors = [...new Set(allRooms.map(r => r.piso))].sort((a, b) => a - b);
+
+      currentFloor = initFloor;
+      buildTabs(floors);
+      renderPlan(currentFloor);
+    }
+
+    // Exponer métodos públicos para integración con el dashboard
+    (wrap as any).refresh     = init;
+    (wrap as any).filterRooms = (q: string) => {
+      searchQuery = q.toLowerCase().trim();
+      renderPlan(currentFloor);
+    };
+
+    init();
+  }
+</script>
