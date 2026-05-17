@@ -77,35 +77,107 @@ import Distribucion from '../../components/distribucion.astro';
   }
 
   // ── WebSocket tiempo real ────────────────────────────────────────
+  let wsConnected  = false;
+  let pollingTimer = null;
+  let pingTimer    = null;
+
+  function setWsIndicator(connected) {
+    wsConnected = connected;
+    const dot    = document.getElementById("wsIndicator");
+    const status = document.getElementById("wsStatus");
+    if (dot) dot.style.background = connected ? "var(--green,#4caf82)" : "var(--amber,#f0a500)";
+    if (status) status.title = connected ? "Tiempo real activo" : "Sin conexión en vivo · actualizando cada 30s";
+  }
+
+  function startPolling() {
+    if (pollingTimer) return;                   // ya corriendo
+    pollingTimer = setInterval(async () => {
+      if (wsConnected) return;                  // WS recuperado → polling inactivo
+      await distWrap?.refresh();
+      await updateTopbarKpis();
+      await loadIncidencias();
+    }, 30000);
+  }
+
   function conectarWS() {
     const role  = sessionStorage.getItem("hotel_role") || "recepcion";
     const token = sessionStorage.getItem("hotel_token") || "";
     const wsUrl = API.replace("http", "ws");
-    const ws    = new WebSocket(wsUrl + "/live?role=" + role + "&token=" + token);
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl + "/live?role=" + role + "&token=" + token);
+    } catch {
+      setWsIndicator(false);
+      startPolling();
+      setTimeout(conectarWS, 5000);
+      return;
+    }
+
     ws.onopen = () => {
-      setInterval(
+      setWsIndicator(true);
+      clearInterval(pollingTimer);
+      pollingTimer = null;
+      clearInterval(pingTimer);
+      pingTimer = setInterval(
         () => ws.readyState === 1 && ws.send(JSON.stringify({ type: "ping" })),
         30000,
       );
     };
+
     ws.onmessage = ({ data }) => {
       try {
         const msg = JSON.parse(data);
+        if (msg.type === "pong") return;        // keepalive, ignorar
+
         if (msg.type === "new_incident") {
           loadIncidencias();
           showToast("⚠ Nueva incidencia: " + (msg.incident?.title || ""), "warning");
         }
         if (msg.type === "checkin" || msg.type === "checkout") {
           loadCILists();
-          loadTopbarKpis();
-          updateRoomsFromAPI();
+          updateTopbarKpis();
+          distWrap?.refresh();
         }
         if (msg.type === "room_status") {
-          updateRoomsFromAPI();
+          // Actualización optimista: repintar la celda sin esperar fetch completo
+          const r = msg.room || msg.data;
+          if (r?.number || r?.num) {
+            applyRoomPatch(r.number ?? r.num, r.status);
+          }
+          // Luego sincronizar el estado completo desde la API
+          distWrap?.refresh().then?.(() => updateTopbarKpis());
+        }
+        if (msg.type === "incident_update") {
+          loadIncidencias();
+          updateTopbarKpis();
         }
       } catch {}
     };
-    ws.onclose = () => setTimeout(conectarWS, 3000);
+
+    ws.onerror = () => {
+      setWsIndicator(false);
+      startPolling();
+    };
+
+    ws.onclose = () => {
+      clearInterval(pingTimer);
+      setWsIndicator(false);
+      startPolling();
+      setTimeout(conectarWS, 4000);
+    };
+  }
+
+  // Parchea el color/clase de una celda en el plano sin re-renderizar todo
+  function applyRoomPatch(num, newStatus) {
+    const allStatuses = ["ocupada","libre-limpia","libre-sucia","reservada","checkout","mantenimiento","bloqueada"];
+    document.querySelectorAll(".dist-room").forEach(cell => {
+      const numEl = cell.querySelector(".dist-num");
+      if (!numEl || numEl.textContent.trim() !== String(num)) return;
+      allStatuses.forEach(s => cell.classList.remove("st-" + s));
+      cell.classList.add("st-" + newStatus);
+      const fill = cell.querySelector(".dist-fill");
+      if (fill) fill.style.background = "var(--status-" + newStatus + ")";
+    });
   }
 
   // ── INICIALIZACIÓN ───────────────────────────────────────────────
@@ -114,6 +186,7 @@ import Distribucion from '../../components/distribucion.astro';
     loadCILists();
     loadIncidencias();
     conectarWS();
+    startPolling();   // arrancar polling como red de seguridad desde el inicio
   });
 </script>
 
@@ -234,6 +307,10 @@ import Distribucion from '../../components/distribucion.astro';
             <span class="tkpi-val amber" id="tkIncidencias">—</span>
             <span class="tkpi-lbl">Incidencias</span>
           </div>
+        </div>
+        <div class="ws-status" id="wsStatus" title="Conectando…">
+          <span id="wsIndicator" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber,#f0a500);transition:background 0.4s;flex-shrink:0"></span>
+          <span class="ws-label">En vivo</span>
         </div>
         <div class="theme-toggle-top" id="themeToggleTop">
           <svg class="t-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -599,6 +676,23 @@ import Distribucion from '../../components/distribucion.astro';
   .tkpi-val.amber { color: var(--amber); }
   .tkpi-lbl { font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-d); }
   .tkpi-div { width: 1px; height: 28px; background: var(--border); }
+
+  /* Indicador de conexión en vivo */
+  .ws-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid var(--border);
+    cursor: default;
+  }
+  .ws-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-d);
+  }
+  @media (max-width: 900px) { .ws-label { display: none; } }
 
   .theme-toggle-top {
     display: flex; align-items: center; cursor: pointer;
@@ -1148,10 +1242,15 @@ import Distribucion from '../../components/distribucion.astro';
     const btn   = document.getElementById("btnGuardarEstado");
     if (!sel) return;
 
+    const newStatus = sel.value;
+
     if (btn) { btn.disabled = true; btn.innerHTML = "<span>Guardando…</span>"; }
 
-    const payload = { status: sel.value };
+    const payload = { status: newStatus };
     if (notas?.value.trim()) payload.notes = notas.value.trim();
+
+    // Actualización optimista: repintar la celda antes de que responda la API
+    applyRoomPatch(num, newStatus);
 
     const result = await apiFetch("PATCH", "/api/rooms/" + num + "/status", payload);
 
@@ -1160,10 +1259,13 @@ import Distribucion from '../../components/distribucion.astro';
     if (result && result.error !== true) {
       showToast("Habitación " + num + " · estado actualizado ✓");
       closeModal();
+      // Sincronizar datos completos desde la API (actualiza tooltips, guest info, etc.)
       distWrap?.refresh();
       updateTopbarKpis();
     } else {
+      // Revertir el cambio optimista si la API falló
       showToast("No se pudo actualizar el estado", "error");
+      distWrap?.refresh();   // re-fetch para restaurar el estado real
     }
   };
 
@@ -1178,6 +1280,7 @@ import Distribucion from '../../components/distribucion.astro';
   // Exponer para el bloque is:inline
   window.loadTopbarKpis     = updateTopbarKpis;
   window.updateRoomsFromAPI = () => distWrap?.refresh();
+  window.applyRoomPatch     = applyRoomPatch;
 
   // ── CHECK-IN / OUT (datos locales de demostración) ───────────────
   const ciData = [
