@@ -1,5 +1,6 @@
 ---
 // src/pages/recepcion/dashboard.astro
+import Distribucion from '../../components/distribucion.astro';
 ---
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -325,7 +326,6 @@
     <!-- ══ MAPA DE PISOS ══ -->
     <section class="section active" id="sec-mapa">
       <div class="floor-controls">
-        <div class="floor-tabs" id="floorTabs"></div>
         <div class="floor-search">
           <svg
             viewBox="0 0 24 24"
@@ -341,11 +341,13 @@
           <input
             class="fsearch-input"
             id="roomSearch"
-            placeholder="Buscar habitación…"
+            placeholder="Buscar habitación o huésped…"
           />
         </div>
       </div>
-      <div class="floor-container" id="floorContainer"></div>
+      <div class="floor-container">
+        <Distribucion />
+      </div>
     </section>
 
     <!-- ══ CHECK-IN / OUT ══ -->
@@ -2092,320 +2094,198 @@
     if (e.target === backdrop) closeModal();
   });
 
-  // ── DATOS ───────────────────────────────────────────────────────
-  type RoomStatus =
-    | "ocupada"
-    | "libre-limpia"
-    | "libre-sucia"
-    | "reservada"
-    | "checkout"
-    | "mantenimiento"
-    | "bloqueada";
-  interface Room {
-    num: number;
-    tipo: string;
-    piso: number;
-    status: RoomStatus;
-    guest?: string;
-    checkIn?: string;
-    checkOut?: string;
-    nights?: number;
-    notas?: string;
-    hasIncidence?: boolean;
-  }
-
-  const tipoMap = {
-    1: "Estándar",
-    2: "Doble",
-    3: "Suite",
-    4: "Jr. Suite",
-    5: "Suite Deluxe",
-    6: "Piso Exec.",
-    7: "Penthouse",
-  };
-  const guestNames = [
-    "García, A.",
-    "Pérez, J.",
-    "López, M.",
-    "Ruiz, P.",
-    "Johnson",
-    "Martínez",
-    "Rodríguez",
-    "Sánchez",
-    "Morales",
-    "Hernández",
-  ];
-
-  function rng(seed) {
-    let s = seed % 2147483647;
-    return () => {
-      s = (s * 16807) % 2147483647;
-      return (s - 1) / 2147483646;
-    };
-  }
-
-  // Generar 248 habitaciones distribuidas en 7 pisos
-  const rooms = [];
-  const statusPool = [
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "ocupada",
-    "libre-limpia",
-    "libre-limpia",
-    "libre-sucia",
-    "reservada",
-    "checkout",
-    "mantenimiento",
-    "bloqueada",
-  ];
-  let roomIdx = 0;
-  for (let piso = 1; piso <= 7; piso++) {
-    const count = piso === 7 ? 8 : piso === 6 ? 24 : 36;
-    const rand = rng(piso * 31);
-    for (let i = 0; i < count; i++) {
-      const num = piso * 100 + (i + 1);
-      const stIdx = Math.floor(rand() * statusPool.length);
-      const st = statusPool[stIdx];
-      const gIdx = Math.floor(rand() * guestNames.length);
-      const hasInc = rand() < 0.08;
-      rooms.push({
-        num,
-        tipo: tipoMap[piso] || "Estándar",
-        piso,
-        status: st,
-        guest:
-          st === "ocupada" || st === "checkout" ? guestNames[gIdx] : undefined,
-        checkIn:
-          st === "ocupada"
-            ? "03 Mar"
-            : st === "checkout"
-              ? "01 Mar"
-              : undefined,
-        checkOut:
-          st === "ocupada"
-            ? "08 Mar"
-            : st === "checkout"
-              ? "05 Mar"
-              : undefined,
-        nights: st === "ocupada" ? 5 : st === "checkout" ? 4 : undefined,
-        hasIncidence: (st === "ocupada" || st === "checkout") && hasInc,
-      });
-      roomIdx++;
-    }
-  }
-
-  const statusLabels = {
-    ocupada: "Ocupada",
+  // ── ETIQUETAS DE ESTADO ─────────────────────────────────────────
+  const statusLabels: Record<string, string> = {
+    ocupada:        "Ocupada",
     "libre-limpia": "Libre · Limpia",
-    "libre-sucia": "Libre · Sucia",
-    reservada: "Reservada hoy",
-    checkout: "Check-out hoy",
-    mantenimiento: "Mantenimiento",
-    bloqueada: "Bloqueada",
-  };
-  const statusBadgeClass = {
-    ocupada: "inc-tipo solicitud",
-    "libre-limpia": "inc-tipo limpieza",
-    "libre-sucia": "inc-tipo",
-    checkout: "inc-tipo tecnico",
-    reservada: "inc-tipo tecnico",
-    mantenimiento: "inc-tipo urgente",
-    bloqueada: "inc-tipo resuelta",
+    "libre-sucia":  "Libre · Sucia",
+    reservada:      "Reservada hoy",
+    checkout:       "Check-out hoy",
+    mantenimiento:  "Mantenimiento",
+    bloqueada:      "Bloqueada",
   };
 
-  // Actualizar KPIs topbar
-  function updateTopbarKpis() {
-    const ocupadas = rooms.filter((r) => r.status === "ocupada").length;
-    const libres = rooms.filter(
-      (r) => r.status === "libre-limpia" || r.status === "libre-sucia",
-    ).length;
-    const checkins = rooms.filter((r) => r.status === "reservada").length;
-    const incs = incidencias.filter((i) => i.estado !== "resuelta").length;
-    const el = document.getElementById;
-    const t = (id: string, val: number) => {
+  const statusColors: Record<string, string> = {
+    ocupada:        "var(--status-ocupada,#c9a96e)",
+    "libre-limpia": "var(--status-libre-limpia,#4caf82)",
+    "libre-sucia":  "var(--status-libre-sucia,#f0a500)",
+    reservada:      "var(--status-reservada,#6b8cff)",
+    checkout:       "var(--status-checkout,#3ec9c9)",
+    mantenimiento:  "var(--status-mantenimiento,#e05555)",
+    bloqueada:      "var(--status-bloqueada,#4a4a5a)",
+  };
+
+  // ── KPIs topbar — usa datos del componente o fallback API ───────
+  async function updateTopbarKpis() {
+    const t = (id: string, val: number | string) => {
       const e = document.getElementById(id);
       if (e) e.textContent = String(val);
     };
-    t("tkOcupadas", ocupadas);
-    t("tkLibres", libres);
-    t("tkCheckins", checkins);
+
+    // Intentar leer stats desde la API
+    const data = await apiFetch("GET", "/api/rooms/stats");
+    if (data) {
+      t("tkOcupadas", data.occupied  ?? data.ocupadas  ?? "—");
+      t("tkLibres",   data.available ?? data.libres    ?? "—");
+      t("tkCheckins", data.checkins  ?? "—");
+    } else {
+      // Fallback: contar desde el componente si ya tiene datos
+      const rooms = (distWrap as any)?.getRooms?.() ?? [];
+      if (rooms.length) {
+        t("tkOcupadas", rooms.filter((r: any) => r.status === "ocupada").length);
+        t("tkLibres",   rooms.filter((r: any) => r.status === "libre-limpia" || r.status === "libre-sucia").length);
+        t("tkCheckins", rooms.filter((r: any) => r.status === "reservada").length);
+      }
+    }
+
+    // Incidencias activas
+    const incs = incidenciasAPI.filter(
+      (i: any) => i.status !== "resolved" && i.status !== "closed"
+    ).length;
     t("tkIncidencias", incs);
     const nc = document.getElementById("notifCount");
     if (nc) nc.textContent = String(incs);
     const nb = document.getElementById("navBadge");
-    if (nb) {
-      nb.textContent = String(incs);
-    }
+    if (nb) nb.textContent = String(incs);
   }
 
-  // ── MAPA DE PISOS ───────────────────────────────────────────────
-  const floorTabs = document.getElementById("floorTabs"),
-    floorContainer = document.getElementById("floorContainer");
-  let currentFloor = 0; // 0 = todos
+  // ── MAPA DE PISOS — componente distribucion.astro ───────────────
+  // El componente emite 'dist-room-click' con los datos de la habitación
+  const distWrap = document.querySelector<HTMLElement & {
+    refresh(): void;
+    filterRooms(q: string): void;
+    getRooms(): any[];
+  }>('.dist-wrap');
 
-  function buildFloorMap(floor: number, searchQ = "") {
-    if (!floorContainer) return;
-    const q = searchQ.toLowerCase();
-    const filtered = rooms.filter(
-      (r) =>
-        (floor === 0 || r.piso === floor) &&
-        (!q ||
-          String(r.num).includes(q) ||
-          (r.guest || "").toLowerCase().includes(q)),
-    );
+  // Búsqueda → filtrar en el componente
+  document.getElementById("roomSearch")?.addEventListener("input", (e) => {
+    distWrap?.filterRooms((e.target as HTMLInputElement).value);
+  });
 
-    if (floor === 0) {
-      // agrupar por piso
-      const byFloor = {};
-      filtered.forEach((r) => {
-        (byFloor[r.piso] || (byFloor[r.piso] = [])).push(r);
-      });
-      floorContainer.innerHTML = "";
-      Object.keys(byFloor)
-        .sort((a, b) => Number(a) - Number(b))
-        .forEach((p) => {
-          const sec = document.createElement("div");
-          sec.className = "floor-section";
-          const lbl = document.createElement("div");
-          lbl.className = "floor-label";
-          lbl.textContent = "Piso " + p;
-          sec.appendChild(lbl);
-          const row = document.createElement("div");
-          row.className = "rooms-row";
-          byFloor[Number(p)].forEach((r) => {
-            row.appendChild(makeRoomCard(r));
-          });
-          sec.appendChild(row);
-          floorContainer.appendChild(sec);
-        });
-    } else {
-      floorContainer.innerHTML = "";
-      const sec = document.createElement("div");
-      sec.className = "floor-section";
-      const lbl = document.createElement("div");
-      lbl.className = "floor-label";
-      lbl.textContent = "Piso " + floor;
-      sec.appendChild(lbl);
-      const row = document.createElement("div");
-      row.className = "rooms-row";
-      filtered.forEach((r) => {
-        row.appendChild(makeRoomCard(r));
-      });
-      sec.appendChild(row);
-      floorContainer.appendChild(sec);
-    }
-  }
+  // Click en celda → abrir modal de detalle
+  distWrap?.addEventListener("dist-room-click", (e: Event) => {
+    openRoomModal((e as CustomEvent).detail);
+  });
 
-  function makeRoomCard(r) {
-    const card = document.createElement("div");
-    card.className =
-      "room-card rc-" + r.status + (r.hasIncidence ? " has-incidence" : "");
-    card.innerHTML = `<div><div class="rc-num">${r.num}</div><div class="rc-type">${r.tipo}</div></div><div class="rc-bottom"><span class="rc-guest">${r.guest || statusLabels[r.status].split("·")[0].trim()}</span><span class="rc-status-dot rc-${r.status}"></span></div>`;
-    card.addEventListener("click", () => openRoomModal(r));
-    return card;
-  }
+  // ── MODAL DE HABITACIÓN ──────────────────────────────────────────
+  function openRoomModal(r: any) {
+    const hasInc = r.hasInc || r.hasIncidence || false;
 
-  function openRoomModal(r) {
+    // Alerta contextual por estado
+    const alerta =
+      r.status === "checkout"
+        ? `<div style="margin-top:12px;padding:10px 12px;background:rgba(62,201,201,.1);border:1px solid rgba(62,201,201,.25);font-size:11px;color:#3ec9c9">
+             → Check-out pendiente${r.horaLimite ? " · salida antes de <strong>" + r.horaLimite + "</strong>" : ""}
+           </div>`
+      : r.status === "mantenimiento"
+        ? `<div style="margin-top:12px;padding:10px 12px;background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.2);font-size:11px;color:#e05555">
+             ✕ Fuera de servicio · no disponible para asignar
+           </div>`
+      : r.status === "libre-sucia"
+        ? `<div style="margin-top:12px;padding:10px 12px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.2);font-size:11px;color:#f0a500">
+             ⚠ Requiere limpieza antes de asignar
+           </div>`
+      : "";
+
     const body = `
-    <div class="detail-grid">
-      <div class="detail-item"><span class="detail-label">Número</span><span class="detail-val">${r.num}</span></div>
-      <div class="detail-item"><span class="detail-label">Tipo</span><span class="detail-val">${r.tipo}</span></div>
-      <div class="detail-item"><span class="detail-label">Piso</span><span class="detail-val">${r.piso}°</span></div>
-      <div class="detail-item"><span class="detail-label">Estado actual</span><span class="detail-val">${statusLabels[r.status]}</span></div>
-      ${r.guest ? `<div class="detail-item"><span class="detail-label">Huésped</span><span class="detail-val">${r.guest}</span></div>` : ""}
-      ${r.checkIn ? `<div class="detail-item"><span class="detail-label">Check-in</span><span class="detail-val">${r.checkIn}</span></div>` : ""}
-      ${r.checkOut ? `<div class="detail-item"><span class="detail-label">Check-out</span><span class="detail-val">${r.checkOut}</span></div>` : ""}
-      ${r.nights ? `<div class="detail-item"><span class="detail-label">Noches</span><span class="detail-val">${r.nights}</span></div>` : ""}
-    </div>
-    <div style="margin-top:16px">
-      <label class="detail-label" style="display:block;margin-bottom:6px">Cambiar estado</label>
-      <select class="status-select" id="modalStatusSel">
-        <option value="ocupada" ${r.status === "ocupada" ? "selected" : ""}>Ocupada</option>
-        <option value="libre-limpia" ${r.status === "libre-limpia" ? "selected" : ""}>Libre · Limpia</option>
-        <option value="libre-sucia" ${r.status === "libre-sucia" ? "selected" : ""}>Libre · Sucia</option>
-        <option value="reservada" ${r.status === "reservada" ? "selected" : ""}>Reservada hoy</option>
-        <option value="checkout" ${r.status === "checkout" ? "selected" : ""}>Check-out hoy</option>
-        <option value="mantenimiento" ${r.status === "mantenimiento" ? "selected" : ""}>Mantenimiento</option>
-        <option value="bloqueada" ${r.status === "bloqueada" ? "selected" : ""}>Bloqueada</option>
-      </select>
-    </div>
-    ${r.hasIncidence ? `<div style="margin-top:12px;padding:10px;background:var(--red-dim);border:1px solid rgba(224,85,85,.2);font-size:11px;color:var(--red)">⚠ Esta habitación tiene una incidencia activa</div>` : ""}
-  `;
-    const footer = `<button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="saveRoomStatus(${r.num})"><span>Guardar</span></button>`;
-    openModal(
-      "Habitación " + r.num,
-      statusLabels[r.status],
-      r.status === "ocupada"
-        ? "inc-tipo solicitud"
-        : r.status === "libre-limpia"
-          ? "inc-tipo limpieza"
-          : r.status === "mantenimiento"
-            ? "inc-tipo urgente"
-            : "inc-tipo",
-      body,
-      footer,
-    );
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">Número</span><span class="detail-val">${r.num}</span></div>
+        <div class="detail-item"><span class="detail-label">Tipo</span><span class="detail-val">${r.tipo}</span></div>
+        <div class="detail-item"><span class="detail-label">Piso</span><span class="detail-val">${r.piso}°</span></div>
+        <div class="detail-item">
+          <span class="detail-label">Estado actual</span>
+          <span class="detail-val" style="color:${statusColors[r.status] || "var(--text)"}">
+            ${statusLabels[r.status] || r.status}
+          </span>
+        </div>
+        ${r.guest     ? `<div class="detail-item"><span class="detail-label">Huésped</span><span class="detail-val">${r.guest}</span></div>` : ""}
+        ${r.checkIn   ? `<div class="detail-item"><span class="detail-label">Check-in</span><span class="detail-val">${r.checkIn}</span></div>` : ""}
+        ${r.checkOut  ? `<div class="detail-item"><span class="detail-label">Check-out</span><span class="detail-val">${r.checkOut}</span></div>` : ""}
+        ${r.nights    ? `<div class="detail-item"><span class="detail-label">Noches</span><span class="detail-val">${r.nights}</span></div>` : ""}
+        ${r.horaLimite? `<div class="detail-item"><span class="detail-label">Hora límite</span><span class="detail-val" style="color:var(--status-checkout,#3ec9c9)">${r.horaLimite}</span></div>` : ""}
+        ${r.capacidad ? `<div class="detail-item"><span class="detail-label">Capacidad</span><span class="detail-val">${r.capacidad} pax</span></div>` : ""}
+        ${r.camas     ? `<div class="detail-item"><span class="detail-label">Camas</span><span class="detail-val">${r.camas}</span></div>` : ""}
+        ${r.vista     ? `<div class="detail-item"><span class="detail-label">Vista</span><span class="detail-val">${r.vista}</span></div>` : ""}
+      </div>
+      ${alerta}
+      ${hasInc ? `<div style="margin-top:12px;padding:10px 12px;background:var(--red-dim);border:1px solid rgba(224,85,85,.2);font-size:11px;color:var(--red)">⚠ Esta habitación tiene una incidencia activa</div>` : ""}
+
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+        <label class="detail-label" style="display:block;margin-bottom:8px">Cambiar estado</label>
+        <div style="position:relative">
+          <span id="modalStatusDot" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:${statusColors[r.status] || "var(--text-d)"}"></span>
+          <select class="status-select" id="modalStatusSel" style="padding-left:26px" onchange="onStatusSelChange(this)">
+            <option value="ocupada"       ${r.status === "ocupada"       ? "selected" : ""}>Ocupada</option>
+            <option value="libre-limpia"  ${r.status === "libre-limpia"  ? "selected" : ""}>Libre · Limpia</option>
+            <option value="libre-sucia"   ${r.status === "libre-sucia"   ? "selected" : ""}>Libre · Sucia</option>
+            <option value="reservada"     ${r.status === "reservada"     ? "selected" : ""}>Reservada hoy</option>
+            <option value="checkout"      ${r.status === "checkout"      ? "selected" : ""}>Check-out hoy</option>
+            <option value="mantenimiento" ${r.status === "mantenimiento" ? "selected" : ""}>Mantenimiento</option>
+            <option value="bloqueada"     ${r.status === "bloqueada"     ? "selected" : ""}>Bloqueada</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label class="detail-label" style="display:block;margin-bottom:6px">Notas internas</label>
+        <textarea class="status-select" id="modalNotas" rows="2"
+          placeholder="Observaciones sobre la habitación (opcional)…"
+          style="resize:vertical;font-size:11px;line-height:1.6"
+        >${r.notas || ""}</textarea>
+      </div>
+    `;
+
+    const footer = `
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" id="btnGuardarEstado" onclick="saveRoomStatus(${r.num})">
+        <span>Guardar cambio</span>
+      </button>
+    `;
+
+    const badgeClass =
+      r.status === "ocupada"       ? "inc-tipo solicitud" :
+      r.status === "libre-limpia"  ? "inc-tipo limpieza"  :
+      r.status === "mantenimiento" ? "inc-tipo urgente"   : "inc-tipo";
+
+    openModal("Habitación " + r.num, statusLabels[r.status] || r.status, badgeClass, body, footer);
   }
 
-  window.saveRoomStatus = (num) => {
-    const sel = document.getElementById("modalStatusSel") as HTMLSelectElement;
-    if (!sel) return;
-    const room = rooms.find((r) => r.num === num);
-    if (room) {
-      room.status = sel.value as RoomStatus;
-    }
-    closeModal();
-    buildFloorMap(
-      currentFloor,
-      (document.getElementById("roomSearch") as HTMLInputElement)?.value || "",
-    );
-    updateTopbarKpis();
+  // Dot de color en el select al cambiar estado
+  window.onStatusSelChange = (sel: HTMLSelectElement) => {
+    const dot = document.getElementById("modalStatusDot");
+    if (dot) dot.style.background = statusColors[sel.value] || "var(--text-d)";
   };
+
+  window.saveRoomStatus = async (num: number) => {
+    const sel   = document.getElementById("modalStatusSel") as HTMLSelectElement;
+    const notas = document.getElementById("modalNotas") as HTMLTextAreaElement;
+    const btn   = document.getElementById("btnGuardarEstado") as HTMLButtonElement;
+    if (!sel) return;
+
+    if (btn) { btn.disabled = true; btn.innerHTML = "<span>Guardando…</span>"; }
+
+    const payload: any = { status: sel.value };
+    if (notas?.value.trim()) payload.notes = notas.value.trim();
+
+    const result = await apiFetch("PATCH", "/api/rooms/" + num + "/status", payload);
+
+    if (btn) { btn.disabled = false; btn.innerHTML = "<span>Guardar cambio</span>"; }
+
+    if (result && result.error !== true) {
+      showToast("Habitación " + num + " · estado actualizado ✓");
+      closeModal();
+      distWrap?.refresh();
+      updateTopbarKpis();
+    } else {
+      showToast("No se pudo actualizar el estado", "error");
+    }
+  };
+
   window.closeModal = closeModal;
 
-  // Floor tabs
-  function buildFloorTabs() {
-    if (!floorTabs) return;
-    floorTabs.innerHTML = "";
-    const allBtn = document.createElement("button");
-    allBtn.className = "floor-tab active";
-    allBtn.textContent = "Todos";
-    allBtn.setAttribute("data-floor", "0");
-    floorTabs.appendChild(allBtn);
-    for (let i = 1; i <= 7; i++) {
-      const btn = document.createElement("button");
-      btn.className = "floor-tab";
-      btn.textContent = "P" + i;
-      btn.setAttribute("data-floor", String(i));
-      floorTabs.appendChild(btn);
-    }
-    floorTabs.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest(".floor-tab");
-      if (!btn) return;
-      document
-        .querySelectorAll(".floor-tab")
-        .forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFloor = Number(btn.getAttribute("data-floor"));
-      buildFloorMap(
-        currentFloor,
-        (document.getElementById("roomSearch") as HTMLInputElement)?.value ||
-          "",
-      );
-    });
-  }
-  buildFloorTabs();
-  buildFloorMap(0);
-
-  document.getElementById("roomSearch")?.addEventListener("input", (e) => {
-    buildFloorMap(currentFloor, (e.target as HTMLInputElement).value);
-  });
+  // Exponer para que el is:inline pueda llamarlos
+  window.loadTopbarKpis    = updateTopbarKpis;
+  window.updateRoomsFromAPI = () => distWrap?.refresh();
 
   // ── CHECK-IN / OUT ───────────────────────────────────────────────
   interface CIEntry {
@@ -2568,13 +2448,8 @@
     const c = ciData.find((x) => x.id === id);
     if (!c) return;
     c.estado = "en-casa";
-    const r = rooms.find((x) => x.num === c.hab);
-    if (r) {
-      r.status = "ocupada";
-      r.guest = c.nombre.split(" ")[1] || c.nombre;
-    }
     renderCILists();
-    buildFloorMap(currentFloor);
+    distWrap?.refresh();
     updateTopbarKpis();
     openModal(
       "Check-in realizado",
@@ -2588,14 +2463,9 @@
     const c = ciData.find((x) => x.id === id);
     if (!c) return;
     c.estado = "en-casa";
-    const r = rooms.find((x) => x.num === c.hab);
-    if (r) {
-      r.status = "libre-sucia";
-      r.guest = undefined;
-    }
     ciData.splice(ciData.indexOf(c), 1);
     renderCILists();
-    buildFloorMap(currentFloor);
+    distWrap?.refresh();
     updateTopbarKpis();
     // Agregar a cola housekeeping
     hkQueue.unshift({
