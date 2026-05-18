@@ -67,15 +67,15 @@
     <div class="stats">
       <div class="stat-divider"></div>
       <div class="stat-item">
-        <span class="stat-number">248</span>
+        <span class="stat-number" id="statRooms">—</span>
         <span class="stat-label">Habitaciones activas</span>
       </div>
       <div class="stat-item">
-        <span class="stat-number">94%</span>
+        <span class="stat-number" id="statOccupancy">—</span>
         <span class="stat-label">Ocupaci&oacute;n actual</span>
       </div>
       <div class="stat-item">
-        <span class="stat-number">18</span>
+        <span class="stat-number" id="statStaff">—</span>
         <span class="stat-label">Personal en turno</span>
       </div>
       <div class="stat-divider"></div>
@@ -1054,6 +1054,26 @@
 
 <script>
   // @ts-nocheck
+  // ── ESTADÍSTICAS EN TIEMPO REAL (panel izquierdo) ─────────────────
+  ;(async () => {
+    const API_URL = 'http://localhost:3000'
+    try {
+      const res = await fetch(`${API_URL}/api/auth/stats`)
+      if (!res.ok) return
+      const { totalRooms, occupancyPct, activeStaff } = await res.json()
+
+      const elRooms     = document.getElementById('statRooms')
+      const elOccupancy = document.getElementById('statOccupancy')
+      const elStaff     = document.getElementById('statStaff')
+
+      if (elRooms)     elRooms.textContent     = totalRooms
+      if (elOccupancy) elOccupancy.textContent = `${occupancyPct}%`
+      if (elStaff)     elStaff.textContent     = activeStaff
+    } catch {
+      // Sin conexión: los valores quedan en "—"
+    }
+  })()
+
   // ── SISTEMA DE TEMAS DIA / NOCHE ──────────────────────────────────
 
   const DAY_START = 6; // 6:00 AM
