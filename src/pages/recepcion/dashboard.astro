@@ -355,6 +355,18 @@ import Distribucion from '../../components/distribucion.astro';
     <!-- ══ CHECK-IN / OUT ══ -->
     <section class="section" id="sec-checkins">
       <div class="ci-layout">
+
+        <!-- COL 1 · Check-out pendientes (urgente) -->
+        <div class="ci-col">
+          <div class="ci-col-header">
+            <div class="ci-col-dot" style="background:var(--teal)"></div>
+            <span class="ci-col-title">Check-out hoy</span>
+            <span class="ci-col-count" id="ciOutCount">0</span>
+          </div>
+          <div class="ci-list" id="ciOutList"></div>
+        </div>
+
+        <!-- COL 2 · Check-in pendientes -->
         <div class="ci-col">
           <div class="ci-col-header">
             <div class="ci-col-dot checkin-dot"></div>
@@ -363,6 +375,8 @@ import Distribucion from '../../components/distribucion.astro';
           </div>
           <div class="ci-list" id="ciPendList"></div>
         </div>
+
+        <!-- COL 3 · En casa -->
         <div class="ci-col">
           <div class="ci-col-header">
             <div class="ci-col-dot incasa-dot"></div>
@@ -371,14 +385,93 @@ import Distribucion from '../../components/distribucion.astro';
           </div>
           <div class="ci-list" id="ciIncasaList"></div>
         </div>
-        <div class="ci-col">
+
+        <!-- COL 4 · Nueva reservación -->
+        <div class="ci-col ci-col-new">
           <div class="ci-col-header">
-            <div class="ci-col-dot checkout-dot"></div>
-            <span class="ci-col-title">Check-out hoy</span>
-            <span class="ci-col-count" id="ciOutCount">0</span>
+            <div class="ci-col-dot" style="background:var(--blue)"></div>
+            <span class="ci-col-title">Nueva reservación</span>
           </div>
-          <div class="ci-list" id="ciOutList"></div>
+          <div class="res-form" id="resForm">
+
+            <!-- Nombre del huésped -->
+            <div class="res-field">
+              <label class="res-label">Nombre del huésped</label>
+              <input class="res-input" id="resNombre" type="text" placeholder="Nombre completo…" autocomplete="off" />
+            </div>
+
+            <!-- Pax -->
+            <div class="res-field">
+              <label class="res-label">Huéspedes</label>
+              <div class="res-pax-row">
+                <button class="res-pax-btn" id="resPaxMinus" onclick="resPaxChange(-1)">−</button>
+                <span class="res-pax-val" id="resPaxVal">1</span>
+                <button class="res-pax-btn" id="resPaxPlus"  onclick="resPaxChange(1)">+</button>
+              </div>
+            </div>
+
+            <!-- Calendario de llegada / salida -->
+            <div class="res-field">
+              <label class="res-label">Fechas de estancia</label>
+              <div class="res-dates-row">
+                <div class="res-date-chip" id="resChipIn"  onclick="resOpenCal('in')">
+                  <span class="res-date-lbl">Llegada</span>
+                  <span class="res-date-val" id="resInVal">—</span>
+                </div>
+                <div class="res-date-arrow">→</div>
+                <div class="res-date-chip" id="resChipOut" onclick="resOpenCal('out')">
+                  <span class="res-date-lbl">Salida</span>
+                  <span class="res-date-val" id="resOutVal">—</span>
+                </div>
+              </div>
+              <!-- Mini calendario inline -->
+              <div class="res-cal" id="resCal" style="display:none">
+                <div class="res-cal-nav">
+                  <button class="res-cal-nav-btn" onclick="resCalNav(-1)">‹</button>
+                  <span class="res-cal-month" id="resCalMonth"></span>
+                  <button class="res-cal-nav-btn" onclick="resCalNav(1)">›</button>
+                </div>
+                <div class="res-cal-days-head">
+                  <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span>
+                  <span>Vi</span><span>Sá</span><span>Do</span>
+                </div>
+                <div class="res-cal-grid" id="resCalGrid"></div>
+              </div>
+              <div class="res-nights" id="resNightsLbl" style="display:none"></div>
+            </div>
+
+            <!-- Selector de piso -->
+            <div class="res-field" id="resFloorField" style="display:none">
+              <label class="res-label">Piso</label>
+              <div class="res-floor-chips" id="resFloorChips"></div>
+            </div>
+
+            <!-- Selector de habitación (solo libres) -->
+            <div class="res-field" id="resRoomField" style="display:none">
+              <div class="res-room-toolbar">
+                <label class="res-label">Habitación <span class="res-label-sub" id="resRoomSub"></span></label>
+                <button class="res-sel-all" id="resSelAll" onclick="resToggleAll()">Seleccionar todo</button>
+              </div>
+              <div class="res-room-grid" id="resRoomGrid"></div>
+            </div>
+
+            <!-- Notas -->
+            <div class="res-field">
+              <label class="res-label">Notas / solicitudes especiales</label>
+              <textarea class="res-input res-textarea" id="resNotas" rows="2" placeholder="Opcional…"></textarea>
+            </div>
+
+            <!-- Botón guardar -->
+            <button class="res-submit" id="resSubmit" onclick="submitReservacion()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+              Crear reservación
+            </button>
+
+          </div>
         </div>
+
       </div>
     </section>
 
@@ -773,6 +866,225 @@ import Distribucion from '../../components/distribucion.astro';
   .ci-btn.primary:hover { background: var(--gold); color: var(--gold-fg); }
   .ci-btn:hover { border-color: var(--border-h); color: var(--text-m); }
 
+  /* ── NUEVA RESERVACIÓN ── */
+  .ci-layout {
+    display: grid;
+    grid-template-columns: 210px 210px 210px 1fr;
+    gap: 14px;
+    height: 100%;
+    min-width: 0;
+  }
+  .ci-col-new { overflow: hidden; min-width: 0; }
+  .res-form { flex: 1; overflow-y: auto; padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+
+  .res-field { display: flex; flex-direction: column; gap: 6px; }
+  .res-label { font-size: 8px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-d); }
+  .res-label-sub { color: var(--green); letter-spacing: 0.1em; font-size: 8px; }
+
+  .res-input {
+    background: var(--bg4); border: 1px solid var(--border);
+    padding: 8px 10px; font-family: "Jost", sans-serif; font-size: 11px;
+    color: var(--text); outline: none; transition: border-color 0.2s;
+    caret-color: var(--gold); width: 100%;
+  }
+  .res-input:focus { border-color: var(--gold); }
+  .res-input::placeholder { color: var(--text-d); }
+  .res-textarea { resize: none; line-height: 1.6; }
+
+  /* Pax counter */
+  .res-pax-row { display: flex; align-items: center; gap: 0; }
+  .res-pax-btn {
+    width: 30px; height: 30px; background: var(--bg4); border: 1px solid var(--border);
+    color: var(--text-m); font-size: 14px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+    font-family: monospace;
+  }
+  .res-pax-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .res-pax-val {
+    min-width: 36px; text-align: center; font-family: "Cormorant Garamond", serif;
+    font-size: 17px; font-weight: 400; color: var(--text);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    height: 30px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Date chips */
+  .res-dates-row { display: flex; align-items: center; gap: 8px; }
+  .res-date-chip {
+    flex: 1; background: var(--bg4); border: 1px solid var(--border);
+    padding: 7px 10px; cursor: pointer; transition: border-color 0.2s;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .res-date-chip:hover, .res-date-chip.active { border-color: var(--gold); }
+  .res-date-lbl { font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-d); }
+  .res-date-val { font-size: 11px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .res-date-arrow { font-size: 10px; color: var(--text-d); flex-shrink: 0; }
+  .res-nights { font-size: 9px; color: var(--teal); letter-spacing: 0.1em; padding: 4px 0; }
+
+  /* Mini calendario */
+  .res-cal {
+    background: var(--bg4); border: 1px solid var(--border);
+    padding: 12px; margin-top: 4px; animation: fadeUp 0.2s ease both;
+  }
+  .res-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .res-cal-nav-btn {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-m); width: 22px; height: 22px; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; line-height: 1;
+  }
+  .res-cal-nav-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .res-cal-month { font-family: "Cormorant Garamond", serif; font-size: 13px; font-weight: 400; color: var(--text); letter-spacing: 0.06em; }
+  .res-cal-days-head {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 5px;
+  }
+  .res-cal-days-head span { font-size: 7.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-d); text-align: center; padding: 2px 0; }
+  .res-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .res-cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text-m); cursor: pointer;
+    transition: all 0.15s; border: 1px solid transparent; position: relative;
+  }
+  .res-cal-day:hover:not(.disabled):not(.empty) { border-color: var(--border-h); color: var(--text); background: var(--bg5); }
+  .res-cal-day.today { color: var(--gold); font-weight: 500; }
+  .res-cal-day.selected-in  { background: var(--gold); color: var(--gold-fg); border-color: var(--gold); }
+  .res-cal-day.selected-out { background: var(--teal); color: #0a0a0b; border-color: var(--teal); }
+  .res-cal-day.in-range { background: rgba(201,169,110,0.1); border-color: transparent; color: var(--text); }
+  .res-cal-day.disabled { color: var(--text-d); opacity: 0.35; cursor: default; pointer-events: none; }
+  .res-cal-day.empty { pointer-events: none; }
+
+  /* Floor chips */
+  .res-floor-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .res-floor-chip {
+    padding: 4px 10px; border: 1px solid var(--border); background: transparent;
+    font-family: "Jost", sans-serif; font-size: 9px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-d); cursor: pointer; transition: all 0.2s;
+  }
+  .res-floor-chip:hover { border-color: var(--border-h); color: var(--text-m); }
+  .res-floor-chip.active { border-color: var(--blue); color: var(--blue); background: rgba(107,140,255,0.1); }
+
+  /* Room grid (habitaciones libres) */
+  /* Room mini-plano — mismo visual que distribucion.astro */
+  /* ── Mini-plano de habitaciones ── */
+  .res-room-grid { overflow-x: auto; padding-bottom: 4px; }
+
+  .res-mini-building {
+    display: inline-flex; flex-direction: column;
+    border: 2px solid rgba(110,100,82,0.85);
+    background: var(--bg2);
+    min-width: max-content;
+  }
+  :root.day .res-mini-building { border-color: rgba(72,60,42,0.75); }
+
+  .res-mini-row { display: flex; }
+
+  .res-mini-hallway {
+    display: flex; align-items: center; justify-content: center;
+    height: 22px;
+    background: rgba(0,0,0,0.05);
+    border-top: 1px solid rgba(110,100,82,0.45);
+    border-bottom: 1px solid rgba(110,100,82,0.45);
+    font-size: 6.5px; letter-spacing: 0.44em; text-transform: uppercase;
+    color: var(--text-d); user-select: none;
+  }
+
+  /* Celda — sin pseudoelementos dependientes del padre */
+  .res-room-cell {
+    width: 74px; height: 66px;
+    border-right: 1.5px solid rgba(110,100,82,0.5);
+    border-bottom: 1.5px solid rgba(110,100,82,0.5);
+    position: relative; cursor: pointer; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px;
+    overflow: hidden;
+    transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .res-mini-row-north .res-room-cell:first-child,
+  .res-mini-row-south .res-room-cell:first-child { border-left: 1.5px solid rgba(110,100,82,0.5); }
+  .res-mini-row-north .res-room-cell { border-top: 1.5px solid rgba(110,100,82,0.5); }
+
+  /* La franja y el relleno se inyectan como divs desde JS — igual que dist-fill en distribucion.astro */
+  .res-cell-stripe {
+    position: absolute; left: 0; right: 0; height: 4px;
+    background: var(--status-libre-limpia, #4caf82);
+    z-index: 2; pointer-events: none;
+  }
+  .res-cell-fill {
+    position: absolute; inset: 0;
+    background: var(--status-libre-limpia, #4caf82);
+    opacity: 0.09; pointer-events: none; z-index: 0;
+    transition: opacity 0.2s;
+  }
+  .res-cell-arc {
+    position: absolute; width: 13px; height: 13px;
+    border: 1.5px solid rgba(110,100,82,0.5);
+    pointer-events: none; z-index: 1;
+  }
+
+  .res-room-cell:hover { filter: brightness(1.22); transform: scale(1.06); z-index: 10; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  .res-room-cell.selected { outline: 2px solid var(--status-libre-limpia,#4caf82); outline-offset: -2px; filter: brightness(1.3); z-index: 10; }
+  .res-room-cell.selected .res-cell-fill { opacity: 0.25; }
+
+  .res-room-cell .rn {
+    font-family: "Cormorant Garamond", serif; font-size: 15px; font-weight: 500;
+    color: var(--text); line-height: 1; position: relative; z-index: 3;
+  }
+  .res-room-cell .rt {
+    font-size: 7px; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-d); text-align: center; line-height: 1.2;
+    max-width: 64px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; position: relative; z-index: 3;
+  }
+  .res-room-empty { font-size: 10px; color: var(--text-d); padding: 10px 0; }
+
+  /* ── Checkbox visual en celda ── */
+  .res-cell-chk {
+    position: absolute; top: 5px; right: 5px; z-index: 4;
+    width: 14px; height: 14px;
+    border: 1.5px solid rgba(110,100,82,0.6);
+    background: var(--bg4);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    pointer-events: none;
+  }
+  .res-cell-chk.chk-on {
+    background: var(--status-libre-limpia, #4caf82);
+    border-color: var(--status-libre-limpia, #4caf82);
+    color: #0a0a0b;
+  }
+  .res-room-cell:hover .res-cell-chk {
+    border-color: var(--status-libre-limpia, #4caf82);
+  }
+
+  /* ── Toolbar del selector de habitaciones ── */
+  .res-room-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .res-sel-all {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-d); font-family: "Jost", sans-serif;
+    font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 3px 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .res-sel-all:hover { border-color: var(--green); color: var(--green); }
+  .res-sel-all.all-on { border-color: var(--green); color: var(--green); background: rgba(76,175,130,0.1); }
+  .res-submit {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: transparent; border: 1px solid var(--gold); color: var(--gold);
+    padding: 10px; font-family: "Jost", sans-serif; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.25s; position: relative; overflow: hidden; margin-top: auto;
+  }
+  .res-submit::before {
+    content: ""; position: absolute; inset: 0; background: var(--gold);
+    transform: translateX(-100%); transition: transform 0.3s; z-index: 0;
+  }
+  .res-submit:hover::before { transform: translateX(0); }
+  .res-submit:hover { color: var(--gold-fg); }
+  .res-submit > * { position: relative; z-index: 1; }
+  .res-submit:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
   /* INCIDENCIAS */
   .inc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
   .inc-filters { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -932,9 +1244,18 @@ import Distribucion from '../../components/distribucion.astro';
     .topbar-kpis { display: none; }
     .hk-summary  { grid-template-columns: repeat(3, 1fr); }
   }
+  @media (max-width: 1500px) {
+    .ci-layout { grid-template-columns: 190px 190px 190px 1fr; }
+  }
+  @media (max-width: 1100px) {
+    /* Las 3 cols operativas colapsan arriba, reservación debajo ocupa todo */
+    .ci-layout { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto auto; }
+    .ci-col-new { grid-column: 1 / -1; max-height: 520px; }
+  }
   @media (max-width: 900px) {
     .ci-layout  { grid-template-columns: 1fr; }
-    .ci-col     { max-height: 320px; }
+    .ci-col     { max-height: 300px; }
+    .ci-col-new { max-height: 600px; grid-column: auto; }
     .hk-layout  { grid-template-columns: 1fr; }
   }
   @media (max-width: 768px) {
@@ -1283,58 +1604,152 @@ import Distribucion from '../../components/distribucion.astro';
   window.applyRoomPatch     = applyRoomPatch;
 
   // ── CHECK-IN / OUT (datos locales de demostración) ───────────────
+  // ── DATOS DEMO ───────────────────────────────────────────────────
   const ciData = [
-    { id:1, nombre:"Alejandro Torres",  hab:205, tipo:"Jr. Suite",    entrada:"05 Mar", salida:"09 Mar", noches:4, pax:2, notas:"Solicita cuna extra",    estado:"pendiente" },
-    { id:2, nombre:"Familia Morales",   hab:401, tipo:"Jr. Suite",    entrada:"05 Mar", salida:"12 Mar", noches:7, pax:4, notas:"Llegada 14:00 hrs",      estado:"pendiente" },
-    { id:3, nombre:"Ms. Williams",      hab:607, tipo:"Piso Exec.",   entrada:"05 Mar", salida:"07 Mar", noches:2, pax:1, notas:"Early check-in solicitado", estado:"pendiente" },
-    { id:4, nombre:"Juan Pérez",        hab:312, tipo:"Suite Deluxe", entrada:"03 Mar", salida:"08 Mar", noches:5, pax:2, notas:"—",                       estado:"en-casa"  },
-    { id:5, nombre:"Familia García",    hab:401, tipo:"Jr. Suite",    entrada:"03 Mar", salida:"12 Mar", noches:9, pax:4, notas:"VIP",                     estado:"en-casa"  },
-    { id:6, nombre:"Mr. Johnson",       hab:501, tipo:"Suite Deluxe", entrada:"02 Mar", salida:"15 Mar", noches:13,pax:1, notas:"Corporativo",             estado:"en-casa"  },
-    { id:7, nombre:"Ana López",         hab:201, tipo:"Doble",        entrada:"01 Mar", salida:"05 Mar", noches:4, pax:2, notas:"—",                       estado:"checkout" },
-    { id:8, nombre:"Pedro Ruiz",        hab:318, tipo:"Estándar",     entrada:"02 Mar", salida:"05 Mar", noches:3, pax:1, notas:"—",                       estado:"checkout" },
+    { id:1, nombre:"Alejandro Torres",  hab:205, tipo:"Jr. Suite",    entrada:"2025-03-05", salida:"2025-03-09", noches:4, pax:2, notas:"Solicita cuna extra",       estado:"pendiente" },
+    { id:2, nombre:"Familia Morales",   hab:401, tipo:"Jr. Suite",    entrada:"2025-03-05", salida:"2025-03-12", noches:7, pax:4, notas:"Llegada 14:00 hrs",         estado:"pendiente" },
+    { id:3, nombre:"Ms. Williams",      hab:607, tipo:"Piso Exec.",   entrada:"2025-03-05", salida:"2025-03-07", noches:2, pax:1, notas:"Early check-in solicitado", estado:"pendiente" },
+    { id:4, nombre:"Juan Pérez",        hab:312, tipo:"Suite Deluxe", entrada:"2025-03-03", salida:"2025-03-08", noches:5, pax:2, notas:"—",                         estado:"en-casa"  },
+    { id:5, nombre:"Familia García",    hab:401, tipo:"Jr. Suite",    entrada:"2025-03-03", salida:"2025-03-12", noches:9, pax:4, notas:"VIP",                       estado:"en-casa"  },
+    { id:6, nombre:"Mr. Johnson",       hab:501, tipo:"Suite Deluxe", entrada:"2025-03-02", salida:"2025-03-15", noches:13,pax:1, notas:"Corporativo",               estado:"en-casa"  },
+    { id:7, nombre:"Ana López",         hab:201, tipo:"Doble",        entrada:"2025-03-01", salida:"2025-03-05", noches:4, pax:2, notas:"—",                         estado:"checkout" },
+    { id:8, nombre:"Pedro Ruiz",        hab:318, tipo:"Estándar",     entrada:"2025-03-02", salida:"2025-03-05", noches:3, pax:1, notas:"—",                         estado:"checkout" },
+    { id:9, nombre:"Lucía Fernández",   hab:104, tipo:"Estándar",     entrada:"2025-03-01", salida:"2025-03-05", noches:4, pax:1, notas:"Alérgica a plumas",         estado:"checkout" },
   ];
 
+  // ── HELPERS DE FECHA ─────────────────────────────────────────────
+  const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const MESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  function fmtFechaCorta(iso) {
+    if (!iso) return "—";
+    const [,m,d] = iso.split("-");
+    return d + " " + MESES_CORTO[parseInt(m,10)-1];
+  }
+  function diffDias(isoA, isoB) {
+    return Math.round((new Date(isoB) - new Date(isoA)) / 86400000);
+  }
+  function isHoy(iso) {
+    if (!iso) return false;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const d   = new Date(iso + "T00:00:00"); d.setHours(0,0,0,0);
+    return d.getTime() === hoy.getTime();
+  }
+  function isPasado(iso) {
+    if (!iso) return false;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const d   = new Date(iso + "T00:00:00"); d.setHours(0,0,0,0);
+    return d < hoy;
+  }
+
+  // ── RENDER LISTAS CI/CO ──────────────────────────────────────────
   function renderCILists() {
     const pend   = ciData.filter(c => c.estado === "pendiente");
     const incasa = ciData.filter(c => c.estado === "en-casa");
     const cout   = ciData.filter(c => c.estado === "checkout");
 
-    const fill = (listId, data, btnLabel, btnClass, action) => {
-      const el = document.getElementById(listId);
-      if (!el) return;
-      el.innerHTML = "";
-      data.forEach((c, i) => {
-        const div = document.createElement("div");
-        div.className = "ci-card";
-        div.style.animationDelay = i * 0.05 + "s";
-        div.innerHTML = `
-          <div class="ci-card-top">
-            <div>
-              <div class="ci-name">${c.nombre}</div>
-              <div class="ci-detail">${c.entrada} → ${c.salida} · <span class="ci-nights">${c.noches}n</span> · ${c.pax} pax</div>
+    // Check-out hoy
+    const elOut = document.getElementById("ciOutList");
+    if (elOut) {
+      elOut.innerHTML = "";
+      if (!cout.length) {
+        elOut.innerHTML = '<div style="color:var(--text-d);font-size:11px;padding:8px 0">Sin check-outs pendientes</div>';
+      } else {
+        cout.forEach((c, i) => {
+          const urgente = isHoy(c.salida) || isPasado(c.salida);
+          const pasado  = isPasado(c.salida);
+          const div = document.createElement("div");
+          div.className = "ci-card";
+          div.style.animationDelay = i * 0.05 + "s";
+          div.style.borderLeft = urgente ? "3px solid var(--teal)" : "3px solid var(--border)";
+          div.innerHTML = `
+            <div class="ci-card-top">
+              <div>
+                <div class="ci-name">${c.nombre}</div>
+                <div class="ci-detail">${fmtFechaCorta(c.entrada)} → <strong style="color:${pasado ? "var(--red)" : "var(--teal)"}">${fmtFechaCorta(c.salida)}</strong> · <span class="ci-nights">${c.noches}n</span> · ${c.pax} pax</div>
+              </div>
+              <div class="ci-hab" style="color:var(--teal)">${c.hab}</div>
             </div>
-            <div class="ci-hab">${c.hab}</div>
-          </div>
-          <div style="font-size:10px;color:var(--text-d);margin-bottom:4px">${c.tipo}</div>
-          ${c.notas !== "—" ? `<div style="font-size:9px;color:var(--amber);margin-bottom:6px">📝 ${c.notas}</div>` : ""}
-          <div class="ci-actions">
-            <button class="ci-btn" onclick="verCI(${c.id})">Ver detalle</button>
-            <button class="ci-btn ${btnClass}" onclick="${action}(${c.id})">${btnLabel}</button>
-          </div>`;
-        el.appendChild(div);
-      });
-    };
+            <div style="font-size:10px;color:var(--text-d);margin-bottom:4px">${c.tipo}</div>
+            ${pasado  ? `<div style="font-size:9px;color:var(--red);margin-bottom:6px;letter-spacing:.06em">⚠ Salida vencida</div>` : ""}
+            ${urgente && !pasado ? `<div style="font-size:9px;color:var(--teal);margin-bottom:6px;letter-spacing:.06em">→ Sale hoy</div>` : ""}
+            ${c.notas !== "—" ? `<div style="font-size:9px;color:var(--amber);margin-bottom:6px">📝 ${c.notas}</div>` : ""}
+            <div class="ci-actions">
+              <button class="ci-btn" onclick="verCI(${c.id})">Ver detalle</button>
+              <button class="ci-btn primary" style="border-color:var(--teal);color:var(--teal)" onclick="doCheckoutLocal(${c.id})">Check-out</button>
+            </div>`;
+          elOut.appendChild(div);
+        });
+      }
+      const c3 = document.getElementById("ciOutCount");
+      if (c3) { c3.textContent = String(cout.length); c3.style.background = cout.length ? "rgba(62,201,201,.15)" : ""; c3.style.color = cout.length ? "var(--teal)" : ""; }
+    }
 
-    fill("ciPendList",   pend,   "Check-in",       "primary", "doCheckinLocal");
-    fill("ciIncasaList", incasa, "Ampliar estancia","",        "ampliarCI");
-    fill("ciOutList",    cout,   "Check-out",       "primary", "doCheckoutLocal");
+    // Check-in pendientes
+    const elPend = document.getElementById("ciPendList");
+    if (elPend) {
+      elPend.innerHTML = "";
+      if (!pend.length) {
+        elPend.innerHTML = '<div style="color:var(--text-d);font-size:11px;padding:8px 0">Sin check-ins pendientes</div>';
+      } else {
+        pend.forEach((c, i) => {
+          const div = document.createElement("div");
+          div.className = "ci-card";
+          div.style.animationDelay = i * 0.05 + "s";
+          div.innerHTML = `
+            <div class="ci-card-top">
+              <div>
+                <div class="ci-name">${c.nombre}</div>
+                <div class="ci-detail">${fmtFechaCorta(c.entrada)} → ${fmtFechaCorta(c.salida)} · <span class="ci-nights">${c.noches}n</span> · ${c.pax} pax</div>
+              </div>
+              <div class="ci-hab">${c.hab}</div>
+            </div>
+            <div style="font-size:10px;color:var(--text-d);margin-bottom:4px">${c.tipo}</div>
+            ${c.notas !== "—" ? `<div style="font-size:9px;color:var(--amber);margin-bottom:6px">📝 ${c.notas}</div>` : ""}
+            <div class="ci-actions">
+              <button class="ci-btn" onclick="verCI(${c.id})">Ver detalle</button>
+              <button class="ci-btn primary" onclick="doCheckinLocal(${c.id})">Check-in</button>
+            </div>`;
+          elPend.appendChild(div);
+        });
+      }
+      const c1 = document.getElementById("ciPendCount"); if (c1) c1.textContent = String(pend.length);
+    }
 
-    const c1 = document.getElementById("ciPendCount");
-    const c2 = document.getElementById("ciIncasaCount");
-    const c3 = document.getElementById("ciOutCount");
-    if (c1) c1.textContent = String(pend.length);
-    if (c2) c2.textContent = String(incasa.length);
-    if (c3) c3.textContent = String(cout.length);
+    // En casa
+    const elIn = document.getElementById("ciIncasaList");
+    if (elIn) {
+      elIn.innerHTML = "";
+      if (!incasa.length) {
+        elIn.innerHTML = '<div style="color:var(--text-d);font-size:11px;padding:8px 0">Sin huéspedes en casa hoy</div>';
+      } else {
+        incasa.forEach((c, i) => {
+          const diasRestantes = diffDias(new Date().toISOString().slice(0,10), c.salida);
+          const div = document.createElement("div");
+          div.className = "ci-card";
+          div.style.animationDelay = i * 0.05 + "s";
+          div.innerHTML = `
+            <div class="ci-card-top">
+              <div>
+                <div class="ci-name">${c.nombre}</div>
+                <div class="ci-detail">${fmtFechaCorta(c.entrada)} → ${fmtFechaCorta(c.salida)} · <span class="ci-nights">${c.noches}n</span></div>
+              </div>
+              <div class="ci-hab" style="color:var(--green)">${c.hab}</div>
+            </div>
+            <div style="font-size:10px;color:var(--text-d);margin-bottom:4px">${c.tipo} · ${c.pax} pax</div>
+            ${c.notas !== "—" ? `<div style="font-size:9px;color:var(--amber);margin-bottom:4px">📝 ${c.notas}</div>` : ""}
+            <div style="font-size:9px;color:${diasRestantes <= 1 ? "var(--teal)" : "var(--text-d)"};letter-spacing:.06em">
+              ${diasRestantes <= 0 ? "Sale hoy" : diasRestantes === 1 ? "Sale mañana" : diasRestantes + " días restantes"}
+            </div>
+            <div class="ci-actions" style="margin-top:8px">
+              <button class="ci-btn" onclick="verCI(${c.id})">Ver detalle</button>
+              <button class="ci-btn" onclick="ampliarCI(${c.id})">Ampliar</button>
+            </div>`;
+          elIn.appendChild(div);
+        });
+      }
+      const c2 = document.getElementById("ciIncasaCount"); if (c2) c2.textContent = String(incasa.length);
+    }
   }
   renderCILists();
 
@@ -1346,8 +1761,8 @@ import Distribucion from '../../components/distribucion.astro';
       `<div class="detail-grid">
         <div class="detail-item"><span class="detail-label">Habitación</span><span class="detail-val">${c.hab} · ${c.tipo}</span></div>
         <div class="detail-item"><span class="detail-label">Huéspedes</span><span class="detail-val">${c.pax} pax</span></div>
-        <div class="detail-item"><span class="detail-label">Check-in</span><span class="detail-val">${c.entrada}</span></div>
-        <div class="detail-item"><span class="detail-label">Check-out</span><span class="detail-val">${c.salida}</span></div>
+        <div class="detail-item"><span class="detail-label">Check-in</span><span class="detail-val">${fmtFechaCorta(c.entrada)}</span></div>
+        <div class="detail-item"><span class="detail-label">Check-out</span><span class="detail-val">${fmtFechaCorta(c.salida)}</span></div>
         <div class="detail-item"><span class="detail-label">Noches</span><span class="detail-val">${c.noches}</span></div>
         <div class="detail-item"><span class="detail-label">Notas</span><span class="detail-val">${c.notas}</span></div>
       </div>`,
@@ -1378,15 +1793,364 @@ import Distribucion from '../../components/distribucion.astro';
     updateTopbarKpis();
     openModal(
       "Check-out realizado", "✓ Completado", "inc-tipo limpieza",
-      `<p style="color:var(--text)">Check-out de <strong>${c.nombre}</strong> (hab. ${c.hab}) completado. Habitación enviada a cola de limpieza.</p>`,
+      `<p style="color:var(--text)">Check-out de <strong>${c.nombre}</strong> (hab. ${c.hab}) completado.<br>Habitación añadida a cola de limpieza.</p>`,
       `<button class="btn-ghost" onclick="closeModal()">Cerrar</button>`,
     );
   };
 
-  window.ampliarCI = () => {
-    openModal("Ampliar estancia", "", "", `<p style="color:var(--text-m);margin-bottom:12px">Funcionalidad disponible al conectar el backend.</p>`,
+  window.ampliarCI = id => {
+    openModal("Ampliar estancia", "", "",
+      `<p style="color:var(--text-m)">Funcionalidad disponible al conectar el backend.</p>`,
       `<button class="btn-ghost" onclick="closeModal()">Cerrar</button>`);
   };
+
+  // ── NUEVA RESERVACIÓN — ESTADO ────────────────────────────────────
+  const resState = {
+    pax: 1, dateIn: null, dateOut: null,
+    calMode: null, calYear: new Date().getFullYear(),
+    calMonth: new Date().getMonth(), floor: null,
+    rooms: new Set(),   // selección múltiple
+  };
+
+  window.resPaxChange = delta => {
+    resState.pax = Math.max(1, Math.min(8, resState.pax + delta));
+    const el = document.getElementById("resPaxVal"); if (el) el.textContent = String(resState.pax);
+    if (resState.floor !== null) resLoadRooms(resState.floor);
+  };
+
+  window.resOpenCal = mode => {
+    const cal = document.getElementById("resCal"); if (!cal) return;
+    if (resState.calMode === mode && cal.style.display !== "none") {
+      cal.style.display = "none"; resState.calMode = null;
+      document.getElementById("resChipIn")?.classList.remove("active");
+      document.getElementById("resChipOut")?.classList.remove("active");
+      return;
+    }
+    resState.calMode = mode;
+    document.getElementById("resChipIn")?.classList.toggle("active",  mode === "in");
+    document.getElementById("resChipOut")?.classList.toggle("active", mode === "out");
+    cal.style.display = "block";
+    resRenderCal();
+  };
+
+  window.resCalNav = delta => {
+    resState.calMonth += delta;
+    if (resState.calMonth > 11) { resState.calMonth = 0; resState.calYear++; }
+    if (resState.calMonth < 0)  { resState.calMonth = 11; resState.calYear--; }
+    resRenderCal();
+  };
+
+  function resRenderCal() {
+    const MESES_L = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const monthEl = document.getElementById("resCalMonth");
+    const grid    = document.getElementById("resCalGrid");
+    if (!monthEl || !grid) return;
+    monthEl.textContent = MESES_L[resState.calMonth] + " " + resState.calYear;
+    const year = resState.calYear, month = resState.calMonth;
+    const first  = new Date(year, month, 1).getDay();
+    const offset = first === 0 ? 6 : first - 1;
+    const days   = new Date(year, month + 1, 0).getDate();
+    const today  = new Date(); today.setHours(0,0,0,0);
+    grid.innerHTML = "";
+    for (let i = 0; i < offset; i++) { const e = document.createElement("div"); e.className = "res-cal-day empty"; grid.appendChild(e); }
+    for (let d = 1; d <= days; d++) {
+      const iso  = year + "-" + String(month+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+      const date = new Date(iso + "T00:00:00");
+      const cell = document.createElement("div");
+      cell.textContent = String(d);
+      let cls = "res-cal-day";
+      if (date.getTime() === today.getTime()) cls += " today";
+      if (iso === resState.dateIn)  cls += " selected-in";
+      if (iso === resState.dateOut) cls += " selected-out";
+      if (resState.dateIn && resState.dateOut && iso > resState.dateIn && iso < resState.dateOut) cls += " in-range";
+      if (resState.calMode === "in"  && date < today) cls += " disabled";
+      if (resState.calMode === "out" && date < today) cls += " disabled";
+      if (resState.calMode === "out" && resState.dateIn && iso <= resState.dateIn) cls += " disabled";
+      cell.className = cls;
+      cell.onclick   = () => resSelectDate(iso);
+      grid.appendChild(cell);
+    }
+  }
+
+  function resSelectDate(iso) {
+    if (resState.calMode === "in") {
+      resState.dateIn = iso;
+      if (resState.dateOut && resState.dateOut <= iso) resState.dateOut = null;
+      const el = document.getElementById("resInVal"); if (el) { const [,m,d]=iso.split("-"); el.textContent=d+" "+["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][parseInt(m,10)-1]; }
+      resState.calMode = "out";
+      document.getElementById("resChipIn")?.classList.remove("active");
+      document.getElementById("resChipOut")?.classList.add("active");
+    } else {
+      resState.dateOut = iso;
+      const el = document.getElementById("resOutVal"); if (el) { const [,m,d]=iso.split("-"); el.textContent=d+" "+["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][parseInt(m,10)-1]; }
+      const cal = document.getElementById("resCal"); if (cal) cal.style.display = "none";
+      resState.calMode = null;
+      document.getElementById("resChipIn")?.classList.remove("active");
+      document.getElementById("resChipOut")?.classList.remove("active");
+    }
+    resRenderCal();
+    // Mostrar noches
+    const nlbl = document.getElementById("resNightsLbl");
+    if (nlbl && resState.dateIn && resState.dateOut) {
+      const n = Math.round((new Date(resState.dateOut) - new Date(resState.dateIn)) / 86400000);
+      nlbl.style.display = "block"; nlbl.textContent = n + (n===1?" noche":" noches");
+    }
+    resShowFloors();
+  }
+
+  function resShowFloors() {
+    if (!resState.dateIn || !resState.dateOut) return;
+    const rooms  = distWrap?.getRooms?.() ?? [];
+    const libres = rooms.filter(r => r.status === "libre-limpia");
+    const floors = [...new Set(libres.map(r => r.piso))].sort((a,b) => a-b);
+    const field  = document.getElementById("resFloorField");
+    const chips  = document.getElementById("resFloorChips");
+    if (!field || !chips) return;
+    field.style.display = "block";
+    chips.innerHTML = "";
+    if (!floors.length) { chips.innerHTML = '<span style="font-size:10px;color:var(--text-d)">Sin pisos con habitaciones libres</span>'; return; }
+    floors.forEach(f => {
+      const btn = document.createElement("button");
+      btn.className = "res-floor-chip" + (resState.floor === f ? " active" : "");
+      btn.textContent = "Piso " + f;
+      btn.onclick = () => { resState.floor = f; resState.rooms.clear(); resShowFloors(); resLoadRooms(f); };
+      chips.appendChild(btn);
+    });
+  }
+
+  function resLoadRooms(floor) {
+    const GREEN = "var(--status-libre-limpia,#4caf82)";
+    const WALL  = "rgba(110,100,82,0.5)";
+    const BG    = "var(--bg4,#1e1e24)";
+
+    const rooms  = distWrap?.getRooms?.() ?? [];
+    const libres = rooms.filter(r => r.piso === floor && r.status === "libre-limpia")
+                        .sort((a, b) => a.num - b.num);
+    const field  = document.getElementById("resRoomField");
+    const grid   = document.getElementById("resRoomGrid");
+    const sub    = document.getElementById("resRoomSub");
+    if (!field || !grid) return;
+    field.style.display = "block";
+    if (sub) sub.textContent = libres.length + " disponibles";
+    grid.innerHTML = "";
+
+    if (!libres.length) {
+      grid.innerHTML = '<div class="res-room-empty">Sin habitaciones libres en este piso</div>';
+      return;
+    }
+
+    const mid   = Math.ceil(libres.length / 2);
+    const north = libres.slice(0, mid);
+    const south = libres.slice(mid);
+
+    // ── Crear celda con checkbox de selección múltiple ──────────────
+    const makeResCell = (r, side) => {
+      const isSelected = resState.rooms.has(r.num);
+
+      const cell = document.createElement("div");
+      cell.className = "res-room-cell" + (isSelected ? " selected" : "");
+
+      // Fondo de color (= dist-fill en distribucion.astro)
+      const fill = document.createElement("div");
+      fill.className = "res-cell-fill";
+      fill.style.background = isSelected ? "var(--status-libre-limpia,#4caf82)" : GREEN;
+      cell.appendChild(fill);
+
+      // Franja de color — arriba en norte, abajo en sur
+      const stripe = document.createElement("div");
+      stripe.className = "res-cell-stripe";
+      stripe.style.background = GREEN;
+      stripe.style.top    = side === "north" ? "0"    : "auto";
+      stripe.style.bottom = side === "south" ? "0"    : "auto";
+      cell.appendChild(stripe);
+
+      // Arco de puerta
+      const arc = document.createElement("div");
+      arc.className = "res-cell-arc";
+      arc.style.border = "1.5px solid " + WALL;
+      if (side === "north") {
+        arc.style.bottom = "4px"; arc.style.left = "4px";
+        arc.style.borderTop = "none"; arc.style.borderLeft = "none";
+        arc.style.borderRadius = "0 0 100% 0";
+      } else {
+        arc.style.top = "4px"; arc.style.left = "4px";
+        arc.style.borderBottom = "none"; arc.style.borderLeft = "none";
+        arc.style.borderRadius = "0 100% 0 0";
+      }
+      cell.appendChild(arc);
+
+      // ── Checkbox visual (esquina superior derecha) ──────────────
+      const chk = document.createElement("div");
+      chk.className = "res-cell-chk" + (isSelected ? " chk-on" : "");
+      // Ícono de check SVG cuando está seleccionado
+      if (isSelected) {
+        chk.innerHTML = '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" style="width:8px;height:8px;display:block"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>';
+      }
+      cell.appendChild(chk);
+
+      // Número
+      const numEl = document.createElement("span");
+      numEl.className = "rn";
+      numEl.textContent = String(r.num);
+      cell.appendChild(numEl);
+
+      // Tipo abreviado
+      const tipoEl = document.createElement("span");
+      tipoEl.className = "rt";
+      tipoEl.textContent = (r.tipo || "")
+        .replace("Estándar",    "Std")
+        .replace("Suite Deluxe","Dlx")
+        .replace("Jr. Suite",   "Jr.S")
+        .replace("Ejecutivo",   "Exec")
+        .replace("Penthouse",   "PH")
+        .replace("Doble",       "Dbl");
+      cell.appendChild(tipoEl);
+
+      cell.title = "Hab. " + r.num + " · " + (r.tipo || "");
+
+      // Toggle de selección múltiple
+      cell.onclick = () => {
+        if (resState.rooms.has(r.num)) {
+          resState.rooms.delete(r.num);
+        } else {
+          resState.rooms.add(r.num);
+        }
+        resUpdateRoomSub();
+        resLoadRooms(floor);  // re-render con nueva selección
+      };
+
+      return cell;
+    };
+
+    // ── Building: idéntico a distribucion.astro ──────────────────────
+    const building = document.createElement("div");
+    building.className = "res-mini-building";
+
+    // Fila norte
+    const rowN = document.createElement("div");
+    rowN.className = "res-mini-row res-mini-row-north";
+    north.forEach(r => rowN.appendChild(makeResCell(r, "north")));
+    building.appendChild(rowN);
+
+    // Pasillo
+    const hall = document.createElement("div");
+    hall.className = "res-mini-hallway";
+    hall.textContent = "P  A  S  I  L  L  O";
+    building.appendChild(hall);
+
+    // Fila sur
+    if (south.length) {
+      const rowS = document.createElement("div");
+      rowS.className = "res-mini-row res-mini-row-south";
+      south.forEach(r => rowS.appendChild(makeResCell(r, "south")));
+      building.appendChild(rowS);
+    }
+
+    grid.appendChild(building);
+  }
+
+  // Actualizar el badge del campo "Habitación X disponibles → X seleccionadas"
+  function resUpdateRoomSub() {
+    const sub = document.getElementById("resRoomSub");
+    if (!sub) return;
+    const n = resState.rooms.size;
+    if (n === 0) {
+      const rooms  = distWrap?.getRooms?.() ?? [];
+      const libres = rooms.filter(r => r.piso === resState.floor && r.status === "libre-limpia");
+      sub.textContent = libres.length + " disponibles";
+      sub.style.color = "";
+    } else {
+      sub.textContent = n + " seleccionada" + (n > 1 ? "s" : "");
+      sub.style.color = "var(--green,#4caf82)";
+    }
+    // Actualizar estado del botón "Seleccionar todo"
+    const rooms  = distWrap?.getRooms?.() ?? [];
+    const libres = rooms.filter(r => r.piso === resState.floor && r.status === "libre-limpia");
+    const btnAll = document.getElementById("resSelAll");
+    if (btnAll) {
+      const allOn = libres.length > 0 && libres.every(r => resState.rooms.has(r.num));
+      btnAll.textContent = allOn ? "Deseleccionar todo" : "Seleccionar todo";
+      btnAll.classList.toggle("all-on", allOn);
+    }
+  }
+
+  // Seleccionar / deseleccionar todas las habitaciones del piso actual
+  window.resToggleAll = () => {
+    const rooms  = distWrap?.getRooms?.() ?? [];
+    const libres = rooms.filter(r => r.piso === resState.floor && r.status === "libre-limpia");
+    const allOn  = libres.every(r => resState.rooms.has(r.num));
+    libres.forEach(r => allOn ? resState.rooms.delete(r.num) : resState.rooms.add(r.num));
+    resUpdateRoomSub();
+    resLoadRooms(resState.floor);
+  };
+
+  window.submitReservacion = async () => {
+    const nombre = document.getElementById("resNombre")?.value?.trim();
+    const notas  = document.getElementById("resNotas")?.value?.trim();
+    const btn    = document.getElementById("resSubmit");
+    const rooms  = [...resState.rooms];
+    if (!nombre)           return showToast("Escribe el nombre del huésped",  "warning");
+    if (!resState.dateIn)  return showToast("Selecciona la fecha de llegada", "warning");
+    if (!resState.dateOut) return showToast("Selecciona la fecha de salida",  "warning");
+    if (!rooms.length)     return showToast("Selecciona al menos una habitación", "warning");
+
+    if (btn) { btn.disabled = true; btn.textContent = "Guardando " + rooms.length + " reservación" + (rooms.length > 1 ? "es" : "") + "…"; }
+
+    const n        = Math.round((new Date(resState.dateOut) - new Date(resState.dateIn)) / 86400000);
+    const allRooms = distWrap?.getRooms?.() ?? [];
+    let   ok = 0, fail = 0;
+
+    for (const roomNum of rooms) {
+      const payload = {
+        guestName:       nombre,
+        roomNumber:      roomNum,
+        checkInDate:     resState.dateIn,
+        checkOutDate:    resState.dateOut,
+        guests:          resState.pax,
+        specialRequests: notas || undefined,
+      };
+      const result = await apiFetch("POST", "/api/reservations", payload);
+      if (result && !result.error) {
+        ok++;
+        ciData.unshift({
+          id:      result.id || Date.now() + roomNum,
+          nombre,
+          hab:     roomNum,
+          tipo:    allRooms.find(r => r.num === roomNum)?.tipo || "—",
+          entrada: resState.dateIn,
+          salida:  resState.dateOut,
+          noches:  n,
+          pax:     resState.pax,
+          notas:   notas || "—",
+          estado:  "pendiente",
+        });
+      } else { fail++; }
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M12 5v14M5 12l7 7 7-7"/></svg> Crear reservación'; }
+
+    if (ok > 0) {
+      showToast(ok + " reservación" + (ok > 1 ? "es creadas ✓" : " creada ✓") + (fail > 0 ? " · " + fail + " fallaron" : ""), fail > 0 ? "warning" : "success");
+      resResetForm(); renderCILists(); distWrap?.refresh(); updateTopbarKpis();
+    } else {
+      showToast("Error al crear las reservaciones", "error");
+    }
+  };
+
+  function resResetForm() {
+    Object.assign(resState, { pax:1, dateIn:null, dateOut:null, calMode:null, floor:null });
+    resState.rooms.clear();
+    ["resNombre","resNotas"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+    const paxEl=document.getElementById("resPaxVal"); if(paxEl) paxEl.textContent="1";
+    const inEl=document.getElementById("resInVal");   if(inEl)  inEl.textContent="—";
+    const outEl=document.getElementById("resOutVal"); if(outEl) outEl.textContent="—";
+    const cal=document.getElementById("resCal");      if(cal)   cal.style.display="none";
+    const nl=document.getElementById("resNightsLbl"); if(nl)    nl.style.display="none";
+    const ff=document.getElementById("resFloorField"); if(ff)   ff.style.display="none";
+    const rf=document.getElementById("resRoomField");  if(rf)   rf.style.display="none";
+    const sa=document.getElementById("resSelAll");     if(sa)   { sa.textContent="Seleccionar todo"; sa.classList.remove("all-on"); }
+  }
+
 
   // ── INCIDENCIAS desde API ────────────────────────────────────────
   async function loadIncidencias(filter = "todas") {
